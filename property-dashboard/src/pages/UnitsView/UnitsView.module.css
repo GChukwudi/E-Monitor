@@ -1,0 +1,135 @@
+/* src/pages/UnitsView/UnitsView.module.css */
+
+.unitsView {
+  padding: 1.5rem 0;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.searchBar {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-gray);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  gap: 1rem;
+}
+
+.searchInput {
+  flex: 1;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-gray);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border: 1px solid var(--border-gray);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  color: var(--charcoal);
+  background: var(--off-white);
+  transition: all var(--transition-fast);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--sage-green);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(132, 169, 140, 0.1);
+}
+
+.input::placeholder {
+  color: var(--text-light);
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--border-gray);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--charcoal);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.filterBtn:hover {
+  background: var(--off-white);
+  border-color: var(--sage-green);
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  margin: 0;
+}
+
+.unitsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-gray);
+}
+
+.empty p {
+  color: var(--text-gray);
+  font-size: 1rem;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .unitsView {
+    padding: 1rem 0;
+  }
+  
+  .searchBar {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  
+  .filterBtn span {
+    display: none;
+  }
+  
+  .unitsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

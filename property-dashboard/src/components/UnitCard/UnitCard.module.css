@@ -1,0 +1,157 @@
+/* src/components/UnitCard/UnitCard.module.css */
+
+.card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid var(--border-gray);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.card:hover {
+  border-color: var(--sage-green);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.titleGroup {
+  flex: 1;
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  margin: 0;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.status.active {
+  background: rgba(132, 169, 140, 0.1);
+  color: var(--sage-green);
+}
+
+.status.warning {
+  background: rgba(224, 122, 95, 0.1);
+  color: var(--terracotta);
+}
+
+.status.critical {
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metricLabel {
+  font-size: 0.75rem;
+  color: var(--text-gray);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metricValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin: 0;
+  line-height: 1;
+}
+
+.creditSection {
+  background: var(--off-white);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.creditInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.creditLabel {
+  font-size: 0.75rem;
+  color: var(--text-gray);
+}
+
+.creditValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: rgba(209, 213, 219, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--sage-green), var(--dark-sage));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.unitsRemaining {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin: 0.5rem 0 0 0;
+}
+
+.timestamp {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 1.25rem;
+  }
+  
+  .title {
+    font-size: 1rem;
+  }
+  
+  .metricValue {
+    font-size: 1.25rem;
+  }
+}

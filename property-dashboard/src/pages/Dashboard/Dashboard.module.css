@@ -1,0 +1,35 @@
+/* src/pages/Dashboard/Dashboard.module.css */
+
+.dashboard {
+  padding: 1.5rem 0;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 1rem 0;
+  }
+  
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

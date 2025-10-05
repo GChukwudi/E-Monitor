@@ -1,0 +1,147 @@
+.header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border-gray);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+  gap: 1rem;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mobileMenuBtn {
+  display: none;
+  background: transparent;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  color: var(--charcoal);
+  transition: background-color var(--transition-fast);
+}
+
+.mobileMenuBtn:hover {
+  background: var(--warm-gray);
+}
+
+.branding {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--sage-green);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: var(--text-gray);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.iconBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: 0.625rem;
+  border-radius: var(--radius-sm);
+  color: var(--charcoal);
+  transition: background-color var(--transition-fast);
+}
+
+.iconBtn:hover {
+  background: var(--warm-gray);
+}
+
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  background: var(--terracotta);
+  color: var(--white);
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primaryBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--sage-green);
+  color: var(--white);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all var(--transition-base);
+}
+
+.primaryBtn:hover {
+  background: var(--dark-sage);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btnText {
+  display: inline;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .mobileMenuBtn {
+    display: flex;
+  }
+}
+
+@media (max-width: 768px) {
+  .content {
+    height: 60px;
+  }
+  
+  .title {
+    font-size: 1.125rem;
+  }
+  
+  .btnText {
+    display: none;
+  }
+  
+  .primaryBtn {
+    padding: 0.625rem;
+  }
+}

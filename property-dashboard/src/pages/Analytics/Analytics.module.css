@@ -1,0 +1,108 @@
+/* src/pages/Analytics/Analytics.module.css */
+
+.analytics {
+  padding: 1.5rem 0;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  margin: 0;
+}
+
+.tableCard {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-gray);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background: var(--warm-gray);
+  border-bottom: 2px solid var(--border-gray);
+}
+
+.table th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--border-gray);
+  transition: background-color var(--transition-fast);
+}
+
+.table tbody tr:hover {
+  background: var(--off-white);
+}
+
+.table td {
+  padding: 1rem 1.5rem;
+}
+
+.unitCell {
+  font-weight: 600;
+  color: var(--charcoal);
+  font-size: 0.9375rem;
+}
+
+.valueCell {
+  font-weight: 500;
+  color: var(--charcoal);
+  font-size: 0.9375rem;
+}
+
+.creditCell {
+  font-weight: 600;
+  color: var(--sage-green);
+  font-size: 0.9375rem;
+}
+
+.timestampCell {
+  color: var(--text-gray);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .analytics {
+    padding: 1rem 0;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+  }
+}
