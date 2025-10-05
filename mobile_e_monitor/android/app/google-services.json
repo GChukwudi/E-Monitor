@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "382986159945",
+    "firebase_url": "https://electricity-monitor-9140f-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "electricity-monitor-9140f",
+    "storage_bucket": "electricity-monitor-9140f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:382986159945:android:39666f4389ba93bb7bbc98",
+        "android_client_info": {
+          "package_name": "com.example.mobile_e_monitor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhEOK95WZzzTzDevymq0IRb4kb0j5dRzs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
