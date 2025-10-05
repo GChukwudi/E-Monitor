@@ -10,10 +10,8 @@ A comprehensive IoT-based energy monitoring solution for transparent electricity
 - [Project Structure](#project-structure)
 - [Hardware Setup](#hardware-setup)
 - [Software Setup](#software-setup)
-- [Deployment Guide](#deployment-guide)
 - [Usage](#usage)
 - [Demo Video](#demo-video)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -33,7 +31,7 @@ This system addresses billing transparency issues in multi-tenant buildings wher
 ## 🔗 Links
 
 - **GitHub Repository:** [https://github.com/GChukwudi/E-Monitor](https://github.com/GChukwudi/E-Monitor)
-- **Live (Web Dashboard):** [Your deployment URL]
+- **Live (Web Dashboard):** [https://e-monitor.onrender.com/](https://e-monitor.onrender.com/)
 - **Video Demonstration:** [Link to video]
 
 ---
@@ -289,7 +287,7 @@ flutter run
 
 ### For Property Managers
 
-1. **Access Dashboard:** Visit deployed web URL
+1. **Access Dashboard:** Visit deployed web [URL](https://e-monitor.onrender.com/)
 2. **Monitor Units:** View real-time consumption on Dashboard page
 3. **View Details:** Navigate to Units page for individual unit cards
 4. **Analyze Data:** Check Analytics page for detailed table view
