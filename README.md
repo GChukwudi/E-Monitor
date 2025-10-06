@@ -32,7 +32,7 @@ This system addresses billing transparency issues in multi-tenant buildings wher
 
 - **GitHub Repository:** [https://github.com/GChukwudi/E-Monitor](https://github.com/GChukwudi/E-Monitor)
 - **Live (Web Dashboard):** [https://e-monitor.onrender.com/](https://e-monitor.onrender.com/)
-- **Video Demonstration:** [Link to video]
+- **Video Demonstration:** [https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing](https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing)
 
 ---
 
@@ -314,9 +314,9 @@ flutter run
 
 ## 🎥 Demo Video
 
-**Duration:** 8 minutes
+**Duration:** 7.40 minutes
 
-**Video Link:** [Insert YouTube/Vimeo link]
+**Video Link:** [https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing](https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing)
 
 ### Video Contents:
 - ✅ System overview (30 seconds)
@@ -327,7 +327,6 @@ flutter run
   - Data transmission to Firebase
 - ✅ Web dashboard walkthrough (3 minutes)
 - ✅ Flutter mobile app demonstration (2 minutes)
-- ✅ PDF report generation (30 seconds)
 
 ---
 
