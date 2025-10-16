@@ -1,13 +1,13 @@
-// src/components/Navigation/Navigation.jsx
 import React from 'react';
-import { LayoutDashboard, Zap, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Zap, TrendingUp, Settings } from 'lucide-react';
 import styles from './Navigation.module.css';
 
 const Navigation = ({ activeView, onViewChange }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'units', label: 'Units', icon: Zap },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp }
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+    { id: 'management', label: 'Management', icon: Settings }
   ];
 
   return (
