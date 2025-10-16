@@ -15,9 +15,9 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 export const FirebaseService = {
-  // Subscribe to building using buildingId directly (your data structure)
+  // Subscribe to building using buildingId under buildings/ path
   subscribeToBuilding(buildingId, callback) {
-    const buildingRef = ref(database, buildingId); // Direct path like "building_002"
+    const buildingRef = ref(database, `buildings/${buildingId}`);
     
     const unsubscribe = onValue(buildingRef, (snapshot) => {
       const data = snapshot.val();
@@ -33,7 +33,7 @@ export const FirebaseService = {
   // Get building data once
   async getBuilding(buildingId) {
     try {
-      const buildingRef = ref(database, buildingId); // Direct path
+      const buildingRef = ref(database, `buildings/${buildingId}`);
       const snapshot = await get(buildingRef);
       
       if (snapshot.exists()) {
@@ -57,10 +57,10 @@ export const FirebaseService = {
     return result;
   },
 
-  // Update unit access code
+  // Update unit access code - FIXED PATH
   async updateUnitAccessCode(buildingId, unitId, newAccessCode) {
     try {
-      const unitRef = ref(database, `${buildingId}/units/${unitId}`);
+      const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
       await update(unitRef, {
         accessCode: newAccessCode,
         updatedAt: Date.now()
@@ -73,10 +73,10 @@ export const FirebaseService = {
     }
   },
 
-  // Update tenant information for a unit
+  // Update tenant information for a unit - FIXED PATH
   async updateUnitTenantInfo(buildingId, unitId, tenantInfo) {
     try {
-      const unitRef = ref(database, `${buildingId}/units/${unitId}`);
+      const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
       await update(unitRef, {
         tenantInfo: tenantInfo,
         updatedAt: Date.now()
@@ -89,11 +89,11 @@ export const FirebaseService = {
     }
   },
 
-  // Add new unit to building
+  // Add new unit to building - FIXED PATH
   async addUnit(buildingId, unitName) {
     try {
-      // Get current units to determine next unit number
-      const buildingRef = ref(database, `${buildingId}/units`);
+      // Get current units to determine next unit number - FIXED PATH
+      const buildingRef = ref(database, `buildings/${buildingId}/units`);
       const snapshot = await get(buildingRef);
       
       let unitNumber = 1;
@@ -109,7 +109,7 @@ export const FirebaseService = {
       }
       
       const unitId = `unit_${String(unitNumber).padStart(3, '0')}`;
-      const unitRef = ref(database, `${buildingId}/units/${unitId}`);
+      const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
       
       const unitData = {
         name: unitName,
@@ -132,10 +132,10 @@ export const FirebaseService = {
     }
   },
 
-  // Deactivate unit
+  // Deactivate unit - FIXED PATH
   async deactivateUnit(buildingId, unitId) {
     try {
-      const unitRef = ref(database, `${buildingId}/units/${unitId}`);
+      const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
       await update(unitRef, {
         isActive: false,
         deactivatedAt: Date.now()
@@ -148,9 +148,9 @@ export const FirebaseService = {
     }
   },
 
-  // Subscribe to specific unit
+  // Subscribe to specific unit - FIXED PATH
   subscribeToUnit(buildingId, unitId, callback) {
-    const unitRef = ref(database, `${buildingId}/units/${unitId}`);
+    const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
     
     const unsubscribe = onValue(unitRef, (snapshot) => {
       const data = snapshot.val();
@@ -160,10 +160,10 @@ export const FirebaseService = {
     return () => off(unitRef);
   },
 
-  // Get all units for a building
+  // Get all units for a building - FIXED PATH
   async getUnits(buildingId) {
     try {
-      const unitsRef = ref(database, `${buildingId}/units`);
+      const unitsRef = ref(database, `buildings/${buildingId}/units`);
       const snapshot = await get(unitsRef);
       
       if (snapshot.exists()) {
@@ -177,10 +177,10 @@ export const FirebaseService = {
     }
   },
 
-  // Update building information
+  // Update building information - FIXED PATH
   async updateBuilding(buildingId, updates) {
     try {
-      const buildingRef = ref(database, buildingId);
+      const buildingRef = ref(database, `buildings/${buildingId}`);
       await update(buildingRef, {
         ...updates,
         updatedAt: Date.now()

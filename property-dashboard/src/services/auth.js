@@ -1,4 +1,4 @@
-// AuthService.js - Simplified for property-based authentication
+// AuthService.js - Fixed version
 import { getDatabase, ref, get, set, update } from 'firebase/database';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 
@@ -22,6 +22,7 @@ class AuthService {
       }
       
       this.isInitialized = true;
+      console.log('Firebase services initialized successfully');
     } catch (error) {
       console.error('Error initializing Firebase services:', error);
     }
@@ -46,8 +47,10 @@ class AuthService {
   }
 
   async ensureInitialized() {
-    if (!this.isInitialized) {
-      await this.initializeFirebase();
+    let attempts = 0;
+    while (!this.isInitialized && attempts < 10) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
     return this.database !== null;
   }
@@ -59,17 +62,28 @@ class AuthService {
 
   // Simple hash function for access codes (browser-compatible)
   async hashAccessCode(accessCode) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(accessCode + 'property_salt_2024');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(accessCode + 'property_salt_2024');
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (error) {
+      console.error('Error hashing access code:', error);
+      // Fallback to simple encoding for development
+      return btoa(accessCode + 'property_salt_2024');
+    }
   }
 
   // Verify access code against hash
   async verifyAccessCode(accessCode, hashedCode) {
-    const newHash = await this.hashAccessCode(accessCode);
-    return newHash === hashedCode;
+    try {
+      const newHash = await this.hashAccessCode(accessCode);
+      return newHash === hashedCode;
+    } catch (error) {
+      console.error('Error verifying access code:', error);
+      return false;
+    }
   }
 
   // Send OTP (demo mode)
@@ -78,7 +92,8 @@ class AuthService {
       await this.ensureInitialized();
       
       const generatedOTP = otp || this.generateOTP();
-      const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace(/[^0-9]/g, '')}`);
+      const cleanNumber = mobileNumber.replace(/[^0-9]/g, '');
+      const otpRef = ref(this.database, `otp_verification/${cleanNumber}`);
       
       await set(otpRef, {
         otp: generatedOTP,
@@ -100,7 +115,8 @@ class AuthService {
     try {
       await this.ensureInitialized();
       
-      const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace(/[^0-9]/g, '')}`);
+      const cleanNumber = mobileNumber.replace(/[^0-9]/g, '');
+      const otpRef = ref(this.database, `otp_verification/${cleanNumber}`);
       const snapshot = await get(otpRef);
       
       if (!snapshot.exists()) {
@@ -171,48 +187,77 @@ class AuthService {
     try {
       await this.ensureInitialized();
       
-      // Get all buildings and search for matching access code
-      const allBuildingsRef = ref(this.database);
-      const snapshot = await get(allBuildingsRef);
+      console.log('Attempting login with access code...');
+      
+      // Get all data from root
+      const rootRef = ref(this.database);
+      const snapshot = await get(rootRef);
       
       if (!snapshot.exists()) {
+        console.log('No data found in database');
         return { success: false, error: 'No buildings found' };
       }
 
       const allData = snapshot.val();
+      console.log('Database data keys:', Object.keys(allData));
+      
       let foundBuilding = null;
       let foundBuildingId = null;
 
       // Search through all building IDs
       for (const [key, value] of Object.entries(allData)) {
-        if (key.startsWith('building_') && value.accessCode) {
-          const isMatch = await this.verifyAccessCode(accessCode, value.accessCode);
-          if (isMatch && value.isActive) {
-            foundBuilding = value;
-            foundBuildingId = key;
-            break;
+        if (key.startsWith('buildings/building_') && value && typeof value === 'object') {
+          console.log(`Checking building ${key}:`, {
+            hasAccessCode: !!value.accessCode,
+            isActive: value.isActive
+          });
+          
+          if (value.accessCode && value.isActive) {
+            try {
+              const isMatch = await this.verifyAccessCode(accessCode, value.accessCode);
+              console.log(`Access code match for ${key}:`, isMatch);
+              
+              if (isMatch) {
+                foundBuilding = value;
+                foundBuildingId = key;
+                break;
+              }
+            } catch (verifyError) {
+              console.error(`Error verifying access code for ${key}:`, verifyError);
+            }
           }
         }
       }
 
       if (!foundBuilding) {
+        console.log('No matching building found');
         return { success: false, error: 'Invalid access code' };
       }
 
+      console.log('Login successful for building:', foundBuildingId);
+
       // Update last login
-      const buildingRef = ref(this.database, foundBuildingId);
-      await update(buildingRef, { lastLogin: Date.now() });
+      try {
+        const buildingRef = ref(this.database, foundBuildingId);
+        await update(buildingRef, { lastLogin: Date.now() });
+      } catch (updateError) {
+        console.warn('Failed to update last login:', updateError);
+      }
 
       // Set current user (simplified)
       this.currentUser = {
         buildingId: foundBuildingId,
-        propertyName: foundBuilding.name,
+        propertyName: foundBuilding.name || foundBuildingId,
         mobileNumber: foundBuilding.mobileNumber,
         lastLogin: Date.now()
       };
       
       // Store session
-      localStorage.setItem('propertyUser', JSON.stringify(this.currentUser));
+      try {
+        localStorage.setItem('propertyUser', JSON.stringify(this.currentUser));
+      } catch (storageError) {
+        console.warn('Failed to save to localStorage:', storageError);
+      }
       
       return { 
         success: true, 
@@ -222,7 +267,7 @@ class AuthService {
       };
     } catch (error) {
       console.error('Error logging in:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: 'Login failed. Please try again.' };
     }
   }
 
@@ -231,15 +276,15 @@ class AuthService {
     try {
       await this.ensureInitialized();
       
-      const allBuildingsRef = ref(this.database);
-      const snapshot = await get(allBuildingsRef);
+      const rootRef = ref(this.database);
+      const snapshot = await get(rootRef);
       
       if (!snapshot.exists()) return null;
 
       const allData = snapshot.val();
       
       for (const [key, value] of Object.entries(allData)) {
-        if (key.startsWith('building_') && value.mobileNumber === mobileNumber) {
+        if (key.startsWith('building_') && value && value.mobileNumber === mobileNumber) {
           return { buildingId: key, ...value };
         }
       }
@@ -281,10 +326,15 @@ class AuthService {
   getCurrentUser() {
     if (this.currentUser) return this.currentUser;
     
-    const stored = localStorage.getItem('propertyUser');
-    if (stored) {
-      this.currentUser = JSON.parse(stored);
-      return this.currentUser;
+    try {
+      const stored = localStorage.getItem('propertyUser');
+      if (stored) {
+        this.currentUser = JSON.parse(stored);
+        return this.currentUser;
+      }
+    } catch (error) {
+      console.error('Error getting current user from localStorage:', error);
+      localStorage.removeItem('propertyUser');
     }
     
     return null;
@@ -293,7 +343,11 @@ class AuthService {
   // Logout
   logout() {
     this.currentUser = null;
-    localStorage.removeItem('propertyUser');
+    try {
+      localStorage.removeItem('propertyUser');
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+    }
   }
 
   // Check if user is authenticated
@@ -311,7 +365,7 @@ class AuthService {
       return onMessage(this.messaging, (payload) => {
         console.log('Message received:', payload);
         
-        if (payload.notification) {
+        if (payload.notification && 'Notification' in window) {
           new Notification(payload.notification.title, {
             body: payload.notification.body,
             icon: '/favicon.ico'
