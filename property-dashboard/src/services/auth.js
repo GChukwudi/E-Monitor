@@ -1,4 +1,4 @@
-// AuthService.js - Fixed version
+// AuthService.js - Fixed version with correct building paths
 import { getDatabase, ref, get, set, update } from 'firebase/database';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 
@@ -141,16 +141,21 @@ class AuthService {
     }
   }
 
-  // Register property access
+  // Register property access - FIXED TO USE CORRECT PATH
   async registerProperty(propertyData) {
     try {
       await this.ensureInitialized();
       
       const { buildingId, mobileNumber, accessCode } = propertyData;
       
-      // Check if building exists
-      const buildingRef = ref(this.database, buildingId);
+      console.log('Checking for building:', buildingId);
+      
+      // FIXED: Check if building exists under buildings/ path
+      const buildingRef = ref(this.database, `buildings/${buildingId}`);
       const buildingSnapshot = await get(buildingRef);
+      
+      console.log('Building exists:', buildingSnapshot.exists());
+      console.log('Building data:', buildingSnapshot.val());
       
       if (!buildingSnapshot.exists()) {
         return { success: false, error: 'Building ID not found. Please check with your installer.' };
@@ -175,6 +180,7 @@ class AuthService {
         isActive: true
       });
 
+      console.log('Registration successful for:', buildingId);
       return { success: true, buildingId };
     } catch (error) {
       console.error('Error registering property:', error);
@@ -182,49 +188,47 @@ class AuthService {
     }
   }
 
-  // Login with access code only
+  // Login with access code only - FIXED TO USE CORRECT PATH
   async loginWithAccessCode(accessCode) {
     try {
       await this.ensureInitialized();
       
       console.log('Attempting login with access code...');
       
-      // Get all data from root
-      const rootRef = ref(this.database);
-      const snapshot = await get(rootRef);
+      // Get all buildings and search for matching access code
+      const buildingsRef = ref(this.database, 'buildings');
+      const snapshot = await get(buildingsRef);
       
       if (!snapshot.exists()) {
-        console.log('No data found in database');
+        console.log('No buildings found in database');
         return { success: false, error: 'No buildings found' };
       }
 
-      const allData = snapshot.val();
-      console.log('Database data keys:', Object.keys(allData));
+      const buildings = snapshot.val();
+      console.log('Buildings found:', Object.keys(buildings));
       
       let foundBuilding = null;
       let foundBuildingId = null;
 
-      // Search through all building IDs
-      for (const [key, value] of Object.entries(allData)) {
-        if (key.startsWith('buildings/building_') && value && typeof value === 'object') {
-          console.log(`Checking building ${key}:`, {
-            hasAccessCode: !!value.accessCode,
-            isActive: value.isActive
-          });
-          
-          if (value.accessCode && value.isActive) {
-            try {
-              const isMatch = await this.verifyAccessCode(accessCode, value.accessCode);
-              console.log(`Access code match for ${key}:`, isMatch);
-              
-              if (isMatch) {
-                foundBuilding = value;
-                foundBuildingId = key;
-                break;
-              }
-            } catch (verifyError) {
-              console.error(`Error verifying access code for ${key}:`, verifyError);
+      // Search through all buildings
+      for (const [buildingId, building] of Object.entries(buildings)) {
+        console.log(`Checking building ${buildingId}:`, {
+          hasAccessCode: !!building.accessCode,
+          isActive: building.isActive
+        });
+        
+        if (building.accessCode && building.isActive) {
+          try {
+            const isMatch = await this.verifyAccessCode(accessCode, building.accessCode);
+            console.log(`Access code match for ${buildingId}:`, isMatch);
+            
+            if (isMatch) {
+              foundBuilding = building;
+              foundBuildingId = buildingId;
+              break;
             }
+          } catch (verifyError) {
+            console.error(`Error verifying access code for ${buildingId}:`, verifyError);
           }
         }
       }
@@ -238,7 +242,7 @@ class AuthService {
 
       // Update last login
       try {
-        const buildingRef = ref(this.database, foundBuildingId);
+        const buildingRef = ref(this.database, `buildings/${foundBuildingId}`);
         await update(buildingRef, { lastLogin: Date.now() });
       } catch (updateError) {
         console.warn('Failed to update last login:', updateError);
@@ -271,21 +275,21 @@ class AuthService {
     }
   }
 
-  // Check if property has access credentials (by mobile number)
+  // Check if property has access credentials (by mobile number) - FIXED PATH
   async checkPropertyByMobile(mobileNumber) {
     try {
       await this.ensureInitialized();
       
-      const rootRef = ref(this.database);
-      const snapshot = await get(rootRef);
+      const buildingsRef = ref(this.database, 'buildings');
+      const snapshot = await get(buildingsRef);
       
       if (!snapshot.exists()) return null;
 
-      const allData = snapshot.val();
+      const buildings = snapshot.val();
       
-      for (const [key, value] of Object.entries(allData)) {
-        if (key.startsWith('building_') && value && value.mobileNumber === mobileNumber) {
-          return { buildingId: key, ...value };
+      for (const [buildingId, building] of Object.entries(buildings)) {
+        if (building.mobileNumber === mobileNumber) {
+          return { buildingId, ...building };
         }
       }
       
@@ -296,7 +300,7 @@ class AuthService {
     }
   }
 
-  // Reset access code
+  // Reset access code - FIXED PATH
   async resetAccessCode(mobileNumber, newAccessCode) {
     try {
       await this.ensureInitialized();
@@ -308,7 +312,7 @@ class AuthService {
       }
 
       const hashedAccessCode = await this.hashAccessCode(newAccessCode);
-      const buildingRef = ref(this.database, property.buildingId);
+      const buildingRef = ref(this.database, `buildings/${property.buildingId}`);
       
       await update(buildingRef, { 
         accessCode: hashedAccessCode,
