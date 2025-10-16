@@ -1,7 +1,8 @@
 const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
-  const [step, setStep] = useState(1); // 1: Details, 2: OTP, 3: Property Setup
+  const [step, setStep] = useState(1); // 1: Details, 2: OTP, 3: Success
   const [formData, setFormData] = useState({
     propertyName: '',
+    buildingId: '',
     mobileNumber: '',
     accessCode: '',
     confirmAccessCode: '',
@@ -45,6 +46,14 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
         return;
       }
 
+      // Check if building exists
+      const buildingResult = await FirebaseService.getBuilding(formData.buildingId);
+      if (!buildingResult.success) {
+        setError('Building ID not found. Please check with your installer.');
+        setLoading(false);
+        return;
+      }
+
       // Send OTP
       const otp = AuthService.generateOTP();
       const result = await AuthService.sendOTP(formData.mobileNumber, otp);
@@ -71,11 +80,12 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       const result = await AuthService.verifyOTP(formData.mobileNumber, formData.otp);
       
       if (result.success) {
-        // Register property manager
+        // Register property manager with building assignment
         const registerResult = await AuthService.registerPropertyManager({
           propertyName: formData.propertyName,
           mobileNumber: formData.mobileNumber,
-          accessCode: formData.accessCode
+          accessCode: formData.accessCode,
+          buildingId: formData.buildingId
         });
 
         if (registerResult.success) {
@@ -106,6 +116,22 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
           className={styles.input}
           required
         />
+      </div>
+
+      <div className={styles.inputGroup}>
+        <label className={styles.inputLabel}>Building ID</label>
+        <input
+          type="text"
+          name="buildingId"
+          value={formData.buildingId}
+          onChange={handleInputChange}
+          placeholder="e.g., building_001"
+          className={styles.input}
+          required
+        />
+        <p className={styles.inputHint}>
+          Building ID provided by your installer
+        </p>
       </div>
 
       <div className={styles.inputGroup}>
@@ -160,7 +186,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       {error && <div className={styles.errorMessage}>{error}</div>}
 
       <button type="submit" className={styles.submitButton} disabled={loading}>
-        {loading ? 'Sending OTP...' : 'Send Verification Code'}
+        {loading ? 'Verifying...' : 'Send Verification Code'}
       </button>
     </form>
   );
@@ -196,7 +222,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
         className={styles.linkButton}
         onClick={() => setStep(1)}
       >
-        Change Mobile Number
+        Change Details
       </button>
     </form>
   );
@@ -204,12 +230,18 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   const renderStep3 = () => (
     <div className={styles.successMessage}>
       <h3>Registration Successful!</h3>
-      <p>Your property manager account has been created.</p>
+      <p>Your property manager account has been created for {formData.propertyName}.</p>
+      <p className={styles.accessCodeDisplay}>
+        Your access code: <strong>{formData.accessCode}</strong>
+      </p>
+      <p className={styles.saveNote}>
+        Save this access code - you'll need it to login.
+      </p>
       <button
         className={styles.submitButton}
         onClick={() => onRegisterSuccess()}
       >
-        Continue to Setup
+        Continue to Login
       </button>
     </div>
   );
@@ -220,7 +252,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
         <div className={styles.authHeader}>
           <h1 className={styles.authTitle}>Register Property</h1>
           <p className={styles.authSubtitle}>
-            {step === 1 && 'Create your property manager account'}
+            {step === 1 && 'Connect your property to the monitoring system'}
             {step === 2 && 'Verify your mobile number'}
             {step === 3 && 'Account created successfully'}
           </p>
