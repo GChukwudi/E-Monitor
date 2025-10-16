@@ -1,3 +1,4 @@
+// src/services/auth.js
 import { getDatabase, ref, get, set, update } from 'firebase/database';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
@@ -41,55 +42,80 @@ class AuthService {
     return result;
   }
 
-  // Send OTP (in real implementation, this would use SMS service)
-  async sendOTP(mobileNumber, otp) {
+  // Send OTP using Firebase SMS Authentication
+  async sendOTP(mobileNumber, otp = null) {
     try {
-      // Store OTP in Firebase with expiration
-      const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace('+', '')}`);
-      await set(otpRef, {
-        otp: otp,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes
-        verified: false
-      });
+      const useFirebaseSMS = import.meta.env.VITE_USE_FIREBASE_SMS === 'true';
+      const testMode = import.meta.env.VITE_SMS_TEST_MODE === 'true';
+      
+      if (useFirebaseSMS && !testMode) {
+        // Use Firebase SMS Authentication
+        const FirebaseSMSService = (await import('./firebaseSMS')).default;
+        return await FirebaseSMSService.sendSMSVerification(mobileNumber);
+      } else if (testMode) {
+        // Test mode with fake SMS
+        const FirebaseSMSService = (await import('./firebaseSMS')).default;
+        return await FirebaseSMSService.sendTestSMS(mobileNumber);
+      } else {
+        // Fallback: Store OTP in database (for demo)
+        const generatedOTP = otp || this.generateOTP();
+        const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace('+', '')}`);
+        await set(otpRef, {
+          otp: generatedOTP,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes
+          verified: false
+        });
 
-      // In real implementation, integrate with SMS service like Twilio
-      console.log(`OTP ${otp} sent to ${mobileNumber}`);
-      
-      // For demo purposes, show alert
-      alert(`Demo: OTP is ${otp} for ${mobileNumber}`);
-      
-      return { success: true };
+        // For demo purposes, show alert with OTP
+        console.log(`Demo: OTP ${generatedOTP} sent to ${mobileNumber}`);
+        alert(`Demo Mode: Your verification code is ${generatedOTP}`);
+        
+        return { success: true, otp: generatedOTP };
+      }
     } catch (error) {
       console.error('Error sending OTP:', error);
       return { success: false, error: error.message };
     }
   }
 
-  // Verify OTP
+  // Verify OTP using Firebase SMS or fallback method
   async verifyOTP(mobileNumber, enteredOTP) {
     try {
-      const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace('+', '')}`);
-      const snapshot = await get(otpRef);
+      const useFirebaseSMS = import.meta.env.VITE_USE_FIREBASE_SMS === 'true';
+      const testMode = import.meta.env.VITE_SMS_TEST_MODE === 'true';
       
-      if (!snapshot.exists()) {
-        return { success: false, error: 'OTP not found or expired' };
-      }
+      if (useFirebaseSMS && !testMode) {
+        // Use Firebase SMS verification
+        const FirebaseSMSService = (await import('./firebaseSMS')).default;
+        return await FirebaseSMSService.verifySMSCode(enteredOTP);
+      } else if (testMode) {
+        // Test mode verification
+        const FirebaseSMSService = (await import('./firebaseSMS')).default;
+        return await FirebaseSMSService.verifyTestSMS(enteredOTP);
+      } else {
+        // Fallback: Check OTP in database
+        const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace('+', '')}`);
+        const snapshot = await get(otpRef);
+        
+        if (!snapshot.exists()) {
+          return { success: false, error: 'OTP not found or expired' };
+        }
 
-      const otpData = snapshot.val();
-      
-      if (Date.now() > otpData.expiresAt) {
-        return { success: false, error: 'OTP has expired' };
-      }
+        const otpData = snapshot.val();
+        
+        if (Date.now() > otpData.expiresAt) {
+          return { success: false, error: 'OTP has expired' };
+        }
 
-      if (otpData.otp !== enteredOTP) {
-        return { success: false, error: 'Invalid OTP' };
-      }
+        if (otpData.otp !== enteredOTP) {
+          return { success: false, error: 'Invalid OTP' };
+        }
 
-      // Mark as verified
-      await update(otpRef, { verified: true });
-      return { success: true };
-      
+        // Mark as verified
+        await update(otpRef, { verified: true, verifiedAt: Date.now() });
+        return { success: true };
+      }
     } catch (error) {
       console.error('Error verifying OTP:', error);
       return { success: false, error: error.message };
