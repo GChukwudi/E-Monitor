@@ -12,7 +12,7 @@ import {
   Shield,
   AlertTriangle
 } from 'lucide-react';
-import PropertyService from '../../services/propertyService';
+import FirebaseService from '../../services/firebase';
 import AuthService from '../../services/auth';
 import styles from './UnitManagement.module.css';
 
@@ -21,15 +21,41 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
   const [showAccessCodes, setShowAccessCodes] = useState({});
   const [copiedCodes, setCopiedCodes] = useState({});
   const [loading, setLoading] = useState({});
+  const [newUnitName, setNewUnitName] = useState('');
+  const [addingUnit, setAddingUnit] = useState(false);
 
   const units = property?.units || {};
-  const manager = AuthService.getCurrentUser();
+  const currentUser = AuthService.getCurrentUser();
 
+  // Toggle showing access code
+  const toggleShowAccessCode = (unitId) => {
+    setShowAccessCodes(prev => ({
+      ...prev,
+      [unitId]: !prev[unitId]
+    }));
+  };
+
+  // Copy access code to clipboard
+  const copyAccessCode = async (unitId, accessCode) => {
+    try {
+      await navigator.clipboard.writeText(accessCode);
+      setCopiedCodes(prev => ({ ...prev, [unitId]: true }));
+      
+      setTimeout(() => {
+        setCopiedCodes(prev => ({ ...prev, [unitId]: false }));
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy access code:', err);
+    }
+  };
+
+  // Reset access code for a unit
   const resetAccessCode = async (unitId) => {
     setLoading(prev => ({ ...prev, [unitId]: true }));
     
     try {
-      const result = await FirebaseService.updateUnitAccessCode(buildingId, unitId, AuthService.generateUnitAccessCode());
+      const newAccessCode = FirebaseService.generateUnitAccessCode();
+      const result = await FirebaseService.updateUnitAccessCode(buildingId, unitId, newAccessCode);
       
       if (result.success) {
         // Trigger property update to refresh data
@@ -55,6 +81,53 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
     }
   };
 
+  // Add new unit
+  const addNewUnit = async () => {
+    if (!newUnitName.trim()) return;
+    
+    setAddingUnit(true);
+    
+    try {
+      const result = await FirebaseService.addUnit(buildingId, newUnitName.trim());
+      
+      if (result.success) {
+        setNewUnitName('');
+        onPropertyUpdate(); // Refresh the property data
+      } else {
+        console.error('Failed to add unit:', result.error);
+      }
+    } catch (error) {
+      console.error('Failed to add unit:', error);
+    } finally {
+      setAddingUnit(false);
+    }
+  };
+
+  // Deactivate unit
+  const deactivateUnit = async (unitId) => {
+    if (!confirm('Are you sure you want to deactivate this unit? This action cannot be undone.')) {
+      return;
+    }
+    
+    setLoading(prev => ({ ...prev, [`deactivate_${unitId}`]: true }));
+    
+    try {
+      const result = await FirebaseService.deactivateUnit(buildingId, unitId);
+      
+      if (result.success) {
+        onPropertyUpdate(); // Refresh the property data
+        setSelectedUnit(null); // Close details panel
+      } else {
+        console.error('Failed to deactivate unit:', result.error);
+      }
+    } catch (error) {
+      console.error('Failed to deactivate unit:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, [`deactivate_${unitId}`]: false }));
+    }
+  };
+
+  // Update tenant information
   const updateTenantInfo = async (unitId, tenantInfo) => {
     try {
       const result = await FirebaseService.updateUnitTenantInfo(buildingId, unitId, tenantInfo);
@@ -67,14 +140,16 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
     }
   };
 
+  // Get unit status
   const getUnitStatus = (unit) => {
     if (!unit.isActive) return 'inactive';
-    const credit = parseFloat(unit.remainingCredit) || 0;
+    const credit = parseFloat(unit.remaining_credit) || 0;
     if (credit < 500) return 'critical';
     if (credit < 1000) return 'warning';
     return 'active';
   };
 
+  // Get status color
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return '#84A98C';
@@ -129,7 +204,7 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
             <div key={unitId} className={styles.unitCard}>
               <div className={styles.unitHeader}>
                 <div className={styles.unitInfo}>
-                  <h3 className={styles.unitName}>{unit.name}</h3>
+                  <h3 className={styles.unitName}>{unit.name || unitId.replace('unit_', 'Unit ')}</h3>
                   <span 
                     className={styles.unitStatus}
                     style={{ backgroundColor: getStatusColor(status) }}
@@ -156,7 +231,7 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                 </div>
                 <div className={styles.metric}>
                   <Shield size={16} />
-                  <span>₦{parseFloat(unit.remainingCredit || 0).toFixed(2)}</span>
+                  <span>₦{parseFloat(unit.remaining_credit || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -172,7 +247,7 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                       {isCodeVisible ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                     
-                    {isCodeVisible && (
+                    {isCodeVisible && unit.accessCode && (
                       <button
                         className={styles.iconBtn}
                         onClick={() => copyAccessCode(unitId, unit.accessCode)}
@@ -185,7 +260,7 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                 </div>
                 
                 <div className={styles.accessCodeDisplay}>
-                  {isCodeVisible ? (
+                  {isCodeVisible && unit.accessCode ? (
                     <span className={styles.accessCode}>{unit.accessCode}</span>
                   ) : (
                     <span className={styles.hiddenCode}>••••••••</span>
@@ -216,20 +291,22 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                     />
                   </div>
 
-                  <div className={styles.dangerZone}>
-                    <h4 className={styles.dangerTitle}>
-                      <AlertTriangle size={16} />
-                      Danger Zone
-                    </h4>
-                    
-                    <button
-                      className={styles.dangerBtn}
-                      onClick={() => deactivateUnit(unitId)}
-                      disabled={isDeactivating || !unit.isActive}
-                    >
-                      {isDeactivating ? 'Deactivating...' : 'Deactivate Unit'}
-                    </button>
-                  </div>
+                  {unit.isActive && (
+                    <div className={styles.dangerZone}>
+                      <h4 className={styles.dangerTitle}>
+                        <AlertTriangle size={16} />
+                        Danger Zone
+                      </h4>
+                      
+                      <button
+                        className={styles.dangerBtn}
+                        onClick={() => deactivateUnit(unitId)}
+                        disabled={isDeactivating}
+                      >
+                        {isDeactivating ? 'Deactivating...' : 'Deactivate Unit'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -1,3 +1,4 @@
+// AuthService.js - Simplified for property-based authentication
 import { getDatabase, ref, get, set, update } from 'firebase/database';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 
@@ -12,16 +13,12 @@ class AuthService {
 
   async initializeFirebase() {
     try {
-      // Initialize database
       this.database = getDatabase();
       
-      // Initialize messaging with support check
       const messagingSupported = await isSupported();
       if (messagingSupported) {
         this.messaging = getMessaging();
         await this.initializeMessaging();
-      } else {
-        console.warn('Firebase Messaging is not supported in this browser');
       }
       
       this.isInitialized = true;
@@ -34,7 +31,6 @@ class AuthService {
     if (!this.messaging) return;
     
     try {
-      // Request permission for notifications
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
@@ -42,8 +38,6 @@ class AuthService {
           const token = await getToken(this.messaging, { vapidKey });
           console.log('FCM Token:', token);
           return token;
-        } else {
-          console.warn('VAPID key not configured');
         }
       }
     } catch (error) {
@@ -51,7 +45,6 @@ class AuthService {
     }
   }
 
-  // Ensure Firebase is initialized before database operations
   async ensureInitialized() {
     if (!this.isInitialized) {
       await this.initializeFirebase();
@@ -64,142 +57,111 @@ class AuthService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Generate 8-character unit access code
-  generateUnitAccessCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+  // Simple hash function for access codes (browser-compatible)
+  async hashAccessCode(accessCode) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(accessCode + 'property_salt_2024');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // Send OTP using Firebase SMS Authentication
+  // Verify access code against hash
+  async verifyAccessCode(accessCode, hashedCode) {
+    const newHash = await this.hashAccessCode(accessCode);
+    return newHash === hashedCode;
+  }
+
+  // Send OTP (demo mode)
   async sendOTP(mobileNumber, otp = null) {
     try {
       await this.ensureInitialized();
       
-      const useFirebaseSMS = import.meta.env.VITE_USE_FIREBASE_SMS === 'true';
-      const testMode = import.meta.env.VITE_SMS_TEST_MODE === 'true';
+      const generatedOTP = otp || this.generateOTP();
+      const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace(/[^0-9]/g, '')}`);
       
-      if (useFirebaseSMS && !testMode) {
-        // Use Firebase SMS Authentication
-        const FirebaseSMSService = (await import('./firebaseSMS')).default;
-        return await FirebaseSMSService.sendSMSVerification(mobileNumber);
-      } else if (testMode) {
-        // Test mode with fake SMS
-        const FirebaseSMSService = (await import('./firebaseSMS')).default;
-        return await FirebaseSMSService.sendTestSMS(mobileNumber);
-      } else {
-        // Fallback: Store OTP in database (for demo)
-        const generatedOTP = otp || this.generateOTP();
-        const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace('+', '')}`);
-        await set(otpRef, {
-          otp: generatedOTP,
-          createdAt: Date.now(),
-          expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes
-          verified: false
-        });
+      await set(otpRef, {
+        otp: generatedOTP,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes
+        verified: false
+      });
 
-        // For demo purposes, show alert with OTP
-        console.log(`Demo: OTP ${generatedOTP} sent to ${mobileNumber}`);
-        alert(`Demo Mode: Your verification code is ${generatedOTP}`);
-        
-        return { success: true, otp: generatedOTP };
-      }
+      console.log(`Demo: OTP ${generatedOTP} sent to ${mobileNumber}`);
+      return { success: true, otp: generatedOTP };
     } catch (error) {
       console.error('Error sending OTP:', error);
       return { success: false, error: error.message };
     }
   }
 
-  // Verify OTP using Firebase SMS or fallback method
+  // Verify OTP
   async verifyOTP(mobileNumber, enteredOTP) {
     try {
       await this.ensureInitialized();
       
-      const useFirebaseSMS = import.meta.env.VITE_USE_FIREBASE_SMS === 'true';
-      const testMode = import.meta.env.VITE_SMS_TEST_MODE === 'true';
+      const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace(/[^0-9]/g, '')}`);
+      const snapshot = await get(otpRef);
       
-      if (useFirebaseSMS && !testMode) {
-        // Use Firebase SMS verification
-        const FirebaseSMSService = (await import('./firebaseSMS')).default;
-        return await FirebaseSMSService.verifySMSCode(enteredOTP);
-      } else if (testMode) {
-        // Test mode verification
-        const FirebaseSMSService = (await import('./firebaseSMS')).default;
-        return await FirebaseSMSService.verifyTestSMS(enteredOTP);
-      } else {
-        // Fallback: Check OTP in database
-        const otpRef = ref(this.database, `otp_verification/${mobileNumber.replace('+', '')}`);
-        const snapshot = await get(otpRef);
-        
-        if (!snapshot.exists()) {
-          return { success: false, error: 'OTP not found or expired' };
-        }
-
-        const otpData = snapshot.val();
-        
-        if (Date.now() > otpData.expiresAt) {
-          return { success: false, error: 'OTP has expired' };
-        }
-
-        if (otpData.otp !== enteredOTP) {
-          return { success: false, error: 'Invalid OTP' };
-        }
-
-        // Mark as verified
-        await update(otpRef, { verified: true, verifiedAt: Date.now() });
-        return { success: true };
+      if (!snapshot.exists()) {
+        return { success: false, error: 'OTP not found or expired' };
       }
+
+      const otpData = snapshot.val();
+      
+      if (Date.now() > otpData.expiresAt) {
+        return { success: false, error: 'OTP has expired' };
+      }
+
+      if (otpData.otp !== enteredOTP) {
+        return { success: false, error: 'Invalid OTP' };
+      }
+
+      await update(otpRef, { verified: true, verifiedAt: Date.now() });
+      return { success: true };
     } catch (error) {
       console.error('Error verifying OTP:', error);
       return { success: false, error: error.message };
     }
   }
 
-  // Check if property manager exists
-  async checkPropertyManager(mobileNumber) {
+  // Register property access
+  async registerProperty(propertyData) {
     try {
       await this.ensureInitialized();
       
-      const managersRef = ref(this.database, 'property_managers');
-      const snapshot = await get(managersRef);
+      const { buildingId, mobileNumber, accessCode } = propertyData;
       
-      if (snapshot.exists()) {
-        const managers = snapshot.val();
-        const manager = Object.values(managers).find(m => m.mobileNumber === mobileNumber);
-        return manager || null;
+      // Check if building exists
+      const buildingRef = ref(this.database, buildingId);
+      const buildingSnapshot = await get(buildingRef);
+      
+      if (!buildingSnapshot.exists()) {
+        return { success: false, error: 'Building ID not found. Please check with your installer.' };
       }
-      return null;
-    } catch (error) {
-      console.error('Error checking property manager:', error);
-      return null;
-    }
-  }
 
-  // Register new property manager
-  async registerPropertyManager(propertyData) {
-    try {
-      await this.ensureInitialized();
+      const buildingData = buildingSnapshot.val();
       
-      const managerId = `manager_${Date.now()}`;
-      const managerRef = ref(this.database, `property_managers/${managerId}`);
+      // Check if building already has access credentials
+      if (buildingData.accessCode) {
+        return { success: false, error: 'This building is already registered. Use the existing access code to login.' };
+      }
+
+      // Hash the access code for security
+      const hashedAccessCode = await this.hashAccessCode(accessCode);
       
-      const managerData = {
-        id: managerId,
-        propertyName: propertyData.propertyName,
-        mobileNumber: propertyData.mobileNumber,
-        accessCode: propertyData.accessCode,
-        createdAt: Date.now(),
+      // Update building with access credentials
+      await update(buildingRef, {
+        accessCode: hashedAccessCode,
+        mobileNumber: mobileNumber,
+        registeredAt: Date.now(),
         lastLogin: null,
         isActive: true
-      };
+      });
 
-      await set(managerRef, managerData);
-      return { success: true, managerId, data: managerData };
+      return { success: true, buildingId };
     } catch (error) {
-      console.error('Error registering property manager:', error);
+      console.error('Error registering property:', error);
       return { success: false, error: error.message };
     }
   }
@@ -209,69 +171,83 @@ class AuthService {
     try {
       await this.ensureInitialized();
       
-      // Search for manager by access code
-      const managersRef = ref(this.database, 'property_managers');
-      const snapshot = await get(managersRef);
+      // Get all buildings and search for matching access code
+      const allBuildingsRef = ref(this.database);
+      const snapshot = await get(allBuildingsRef);
       
       if (!snapshot.exists()) {
-        return { success: false, error: 'No property managers found' };
+        return { success: false, error: 'No buildings found' };
       }
 
-      const managers = snapshot.val();
-      const manager = Object.values(managers).find(m => m.accessCode === accessCode && m.isActive);
-      
-      if (!manager) {
+      const allData = snapshot.val();
+      let foundBuilding = null;
+      let foundBuildingId = null;
+
+      // Search through all building IDs
+      for (const [key, value] of Object.entries(allData)) {
+        if (key.startsWith('building_') && value.accessCode) {
+          const isMatch = await this.verifyAccessCode(accessCode, value.accessCode);
+          if (isMatch && value.isActive) {
+            foundBuilding = value;
+            foundBuildingId = key;
+            break;
+          }
+        }
+      }
+
+      if (!foundBuilding) {
         return { success: false, error: 'Invalid access code' };
       }
 
       // Update last login
-      const managerRef = ref(this.database, `property_managers/${manager.id}`);
-      await update(managerRef, { lastLogin: Date.now() });
+      const buildingRef = ref(this.database, foundBuildingId);
+      await update(buildingRef, { lastLogin: Date.now() });
 
-      this.currentUser = manager;
+      // Set current user (simplified)
+      this.currentUser = {
+        buildingId: foundBuildingId,
+        propertyName: foundBuilding.name,
+        mobileNumber: foundBuilding.mobileNumber,
+        lastLogin: Date.now()
+      };
       
       // Store session
-      localStorage.setItem('propertyManager', JSON.stringify(manager));
+      localStorage.setItem('propertyUser', JSON.stringify(this.currentUser));
       
-      return { success: true, manager };
+      return { 
+        success: true, 
+        manager: this.currentUser,
+        building: foundBuilding,
+        buildingId: foundBuildingId
+      };
     } catch (error) {
       console.error('Error logging in:', error);
       return { success: false, error: error.message };
     }
   }
 
-  // Login property manager (old method for compatibility)
-  async loginPropertyManager(mobileNumber, accessCode) {
+  // Check if property has access credentials (by mobile number)
+  async checkPropertyByMobile(mobileNumber) {
     try {
       await this.ensureInitialized();
       
-      const manager = await this.checkPropertyManager(mobileNumber);
+      const allBuildingsRef = ref(this.database);
+      const snapshot = await get(allBuildingsRef);
       
-      if (!manager) {
-        return { success: false, error: 'Property manager not found' };
-      }
+      if (!snapshot.exists()) return null;
 
-      if (manager.accessCode !== accessCode) {
-        return { success: false, error: 'Invalid access code' };
-      }
-
-      if (!manager.isActive) {
-        return { success: false, error: 'Account is deactivated' };
-      }
-
-      // Update last login
-      const managerRef = ref(this.database, `property_managers/${manager.id}`);
-      await update(managerRef, { lastLogin: Date.now() });
-
-      this.currentUser = manager;
+      const allData = snapshot.val();
       
-      // Store session
-      localStorage.setItem('propertyManager', JSON.stringify(manager));
+      for (const [key, value] of Object.entries(allData)) {
+        if (key.startsWith('building_') && value.mobileNumber === mobileNumber) {
+          return { buildingId: key, ...value };
+        }
+      }
       
-      return { success: true, manager };
+      return null;
     } catch (error) {
-      console.error('Error logging in:', error);
-      return { success: false, error: error.message };
+      console.error('Error checking property:', error);
+      return null;
     }
   }
 
@@ -280,15 +256,17 @@ class AuthService {
     try {
       await this.ensureInitialized();
       
-      const manager = await this.checkPropertyManager(mobileNumber);
+      const property = await this.checkPropertyByMobile(mobileNumber);
       
-      if (!manager) {
-        return { success: false, error: 'Property manager not found' };
+      if (!property) {
+        return { success: false, error: 'No property found with this mobile number' };
       }
 
-      const managerRef = ref(this.database, `property_managers/${manager.id}`);
-      await update(managerRef, { 
-        accessCode: newAccessCode,
+      const hashedAccessCode = await this.hashAccessCode(newAccessCode);
+      const buildingRef = ref(this.database, property.buildingId);
+      
+      await update(buildingRef, { 
+        accessCode: hashedAccessCode,
         updatedAt: Date.now()
       });
 
@@ -303,7 +281,7 @@ class AuthService {
   getCurrentUser() {
     if (this.currentUser) return this.currentUser;
     
-    const stored = localStorage.getItem('propertyManager');
+    const stored = localStorage.getItem('propertyUser');
     if (stored) {
       this.currentUser = JSON.parse(stored);
       return this.currentUser;
@@ -315,7 +293,7 @@ class AuthService {
   // Logout
   logout() {
     this.currentUser = null;
-    localStorage.removeItem('propertyManager');
+    localStorage.removeItem('propertyUser');
   }
 
   // Check if user is authenticated
@@ -326,15 +304,13 @@ class AuthService {
   // Setup FCM message listener
   onMessageListener() {
     if (!this.messaging) {
-      console.warn('Messaging not available');
-      return () => {}; // Return empty cleanup function
+      return () => {};
     }
     
     try {
       return onMessage(this.messaging, (payload) => {
         console.log('Message received:', payload);
         
-        // Show notification
         if (payload.notification) {
           new Notification(payload.notification.title, {
             body: payload.notification.body,

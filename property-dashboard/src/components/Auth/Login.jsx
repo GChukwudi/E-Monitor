@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Phone, Lock, Eye, EyeOff, House } from 'lucide-react';
+import { Phone, Lock, Eye, EyeOff, Building } from 'lucide-react';
 import AuthService from '../../services/auth';
-import FirebaseService from '../../services/firebase';
 import styles from './Auth.module.css';
 
 const Login = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword }) => {
@@ -24,7 +23,7 @@ const Login = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword }) => {
       const result = await AuthService.loginWithAccessCode(accessCode);
 
       if (result.success) {
-        onLoginSuccess(result.manager);
+        onLoginSuccess(result.manager, result.building, result.buildingId);
       } else {
         setError(result.error);
       }
@@ -39,8 +38,8 @@ const Login = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword }) => {
     <div className={styles.authContainer}>
       <div className={styles.authCard}>
         <div className={styles.authHeader}>
-          <h1 className={styles.authTitle}>Property Manager Login</h1>
-          <p className={styles.authSubtitle}>Enter property&apos;s access code to continue</p>
+          <h1 className={styles.authTitle}>Property Access</h1>
+          <p className={styles.authSubtitle}>Enter your property access code to continue</p>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.authForm}>
@@ -104,7 +103,6 @@ const Login = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword }) => {
 const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    propertyName: '',
     buildingId: '',
     mobileNumber: '',
     accessCode: '',
@@ -141,26 +139,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
     setLoading(true);
 
     try {
-      // Check if manager already exists
-      const existingManager = await AuthService.checkPropertyManager(formData.mobileNumber);
-      if (existingManager) {
-        setError('A property manager with this number already exists');
-        setLoading(false);
-        return;
-      }
-
-      // For now, skip building validation since buildingId is commented out
-      // You can uncomment this when you re-enable the buildingId field
-      if (formData.buildingId) {
-        const buildingResult = await FirebaseService.getBuilding(formData.buildingId);
-        if (!buildingResult.success) {
-          setError('Building ID not found. Please check with your installer.');
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Send OTP
+      // Send OTP for mobile verification
       const otp = AuthService.generateOTP();
       const result = await AuthService.sendOTP(formData.mobileNumber, otp);
       
@@ -184,15 +163,15 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
     setError('');
 
     try {
-      const result = await AuthService.verifyOTP(formData.mobileNumber, formData.otp);
+      // Verify OTP first
+      const otpResult = await AuthService.verifyOTP(formData.mobileNumber, formData.otp);
       
-      if (result.success) {
-        // Register property manager (without building assignment for now)
-        const registerResult = await AuthService.registerPropertyManager({
-          propertyName: formData.propertyName,
+      if (otpResult.success) {
+        // Register property
+        const registerResult = await AuthService.registerProperty({
+          buildingId: formData.buildingId,
           mobileNumber: formData.mobileNumber,
-          accessCode: formData.accessCode,
-          buildingId: formData.buildingId || `building_${Date.now()}` // Generate a building ID if not provided
+          accessCode: formData.accessCode
         });
 
         if (registerResult.success) {
@@ -201,11 +180,11 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
           setError(registerResult.error);
         }
       } else {
-        setError(result.error);
+        setError(otpResult.error);
       }
     } catch (error) {
       console.error('OTP verification error:', error);
-      setError('OTP verification failed. Please try again.');
+      setError('Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -214,38 +193,23 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   const renderStep1 = () => (
     <form onSubmit={handleStep1Submit} className={styles.authForm}>
       <div className={styles.inputGroup}>
-        <label className={styles.inputLabel}>Property/House Name</label>
-        <div className={styles.inputWrapper}>
-        <House className={styles.inputIcon} size={20} />
-        <input
-          type="text"
-          name="propertyName"
-          value={formData.propertyName}
-          onChange={handleInputChange}
-          placeholder="e.g., Sunset Apartments"
-          className={styles.input}
-          required
-        />
-        </div>
-      </div>
-
-      {/* Uncomment this when you want to use building ID validation */}
-      <div className={styles.inputGroup}>
         <label className={styles.inputLabel}>Building ID</label>
-        <input
-          type="text"
-          name="buildingId"
-          value={formData.buildingId}
-          onChange={handleInputChange}
-          placeholder="e.g., building_001"
-          className={styles.input}
-          required
-        />
+        <div className={styles.inputWrapper}>
+          <Building className={styles.inputIcon} size={20} />
+          <input
+            type="text"
+            name="buildingId"
+            value={formData.buildingId}
+            onChange={handleInputChange}
+            placeholder="e.g., building_002"
+            className={styles.input}
+            required
+          />
+        </div>
         <p className={styles.inputHint}>
           Building ID provided by your installer
         </p>
       </div>
-     
 
       <div className={styles.inputGroup}>
         <label className={styles.inputLabel}>Mobile Number</label>
@@ -308,11 +272,6 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
     <form onSubmit={handleOTPSubmit} className={styles.authForm}>
       <div className={styles.otpInfo}>
         <p>We've sent a 6-digit code to {formData.mobileNumber}</p>
-        {sentOTP && (
-          <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '8px' }}>
-            Demo Mode: Your verification code is <strong>{sentOTP}</strong>
-          </p>
-        )}
       </div>
 
       <div className={styles.inputGroup}>
@@ -332,7 +291,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       {error && <div className={styles.errorMessage}>{error}</div>}
 
       <button type="submit" className={styles.submitButton} disabled={loading}>
-        {loading ? 'Verifying...' : 'Verify Code'}
+        {loading ? 'Verifying...' : 'Verify & Register'}
       </button>
 
       <button
@@ -348,7 +307,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   const renderStep3 = () => (
     <div className={styles.successMessage}>
       <h3>Registration Successful!</h3>
-      <p>Your property manager account has been created for {formData.propertyName}.</p>
+      <p>Your property access has been set up for building {formData.buildingId}.</p>
       <p className={styles.accessCodeDisplay}>
         Your access code: <strong>{formData.accessCode}</strong>
       </p>
@@ -368,11 +327,11 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
     <div className={styles.authContainer}>
       <div className={styles.authCard}>
         <div className={styles.authHeader}>
-          <h1 className={styles.authTitle}>Register Property</h1>
+          <h1 className={styles.authTitle}>Register Property Access</h1>
           <p className={styles.authSubtitle}>
-            {step === 1 && 'Connect your property to the monitoring system'}
+            {step === 1 && 'Set up access to your property monitoring'}
             {step === 2 && 'Verify your mobile number'}
-            {step === 3 && 'Account created successfully'}
+            {step === 3 && 'Access registered successfully'}
           </p>
         </div>
 
@@ -383,7 +342,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
         {step === 1 && (
           <div className={styles.authFooter}>
             <button className={styles.linkButton} onClick={onSwitchToLogin}>
-              Already have an account? Sign In
+              Already registered? Sign In
             </button>
           </div>
         )}
@@ -402,6 +361,7 @@ const ForgotPassword = ({ onBackToLogin }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sentOTP, setSentOTP] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -418,9 +378,10 @@ const ForgotPassword = ({ onBackToLogin }) => {
     setError('');
 
     try {
-      const manager = await AuthService.checkPropertyManager(formData.mobileNumber);
-      if (!manager) {
-        setError('No property manager found with this mobile number');
+      // Check if property exists with this mobile number
+      const property = await AuthService.checkPropertyByMobile(formData.mobileNumber);
+      if (!property) {
+        setError('No property found with this mobile number');
         setLoading(false);
         return;
       }
@@ -429,6 +390,7 @@ const ForgotPassword = ({ onBackToLogin }) => {
       const result = await AuthService.sendOTP(formData.mobileNumber, otp);
       
       if (result.success) {
+        setSentOTP(otp);
         setStep(2);
       } else {
         setError(result.error || 'Failed to send OTP. Please try again.');
@@ -520,6 +482,11 @@ const ForgotPassword = ({ onBackToLogin }) => {
     <form onSubmit={handleResetAccessCode} className={styles.authForm}>
       <div className={styles.otpInfo}>
         <p>Enter the verification code sent to {formData.mobileNumber} and create your new access code</p>
+        {sentOTP && (
+          <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '8px' }}>
+            Demo Mode: Your verification code is <strong>{sentOTP}</strong>
+          </p>
+        )}
       </div>
 
       <div className={styles.inputGroup}>

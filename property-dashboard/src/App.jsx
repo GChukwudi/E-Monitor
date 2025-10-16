@@ -90,22 +90,9 @@ function App() {
     }
   }, [authState]);
 
-  // Subscribe to property updates when authenticated
-  useEffect(() => {
-    if (authState === 'authenticated' && currentUser?.buildingId) {
-      try {
-        // Subscription is already set up in checkAuth, just ensure notifications
-        const unsubscribe = AuthService.onMessageListener();
-        return unsubscribe;
-      } catch (err) {
-        console.warn('Failed to set up message listener:', err);
-      }
-    }
-  }, [authState, currentUser]);
-
   // Handle successful login - building data comes with login
-  const handleLoginSuccess = (manager, building, buildingId) => {
-    setCurrentUser(manager);
+  const handleLoginSuccess = (user, building, buildingId) => {
+    setCurrentUser(user);
     setProperty(building);
     setAuthState('authenticated');
     

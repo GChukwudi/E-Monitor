@@ -15,28 +15,16 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 export const FirebaseService = {
-  // Subscribe to all buildings data (your existing structure)
-  subscribeToBuildings(callback) {
-    const buildingsRef = ref(database, 'buildings');
-    
-    const unsubscribe = onValue(buildingsRef, (snapshot) => {
-      const data = snapshot.val();
-      callback(data);
-    }, (error) => {
-      console.error('Firebase error:', error);
-      callback(null);
-    });
-
-    return () => off(buildingsRef);
-  },
-
-  // Subscribe to specific building (your existing structure)
+  // Subscribe to building using buildingId directly (your data structure)
   subscribeToBuilding(buildingId, callback) {
-    const buildingRef = ref(database, `buildings/${buildingId}`);
+    const buildingRef = ref(database, buildingId); // Direct path like "building_002"
     
     const unsubscribe = onValue(buildingRef, (snapshot) => {
       const data = snapshot.val();
       callback(data);
+    }, (error) => {
+      console.error('Firebase subscription error:', error);
+      callback(null);
     });
 
     return () => off(buildingRef);
@@ -45,7 +33,7 @@ export const FirebaseService = {
   // Get building data once
   async getBuilding(buildingId) {
     try {
-      const buildingRef = ref(database, `buildings/${buildingId}`);
+      const buildingRef = ref(database, buildingId); // Direct path
       const snapshot = await get(buildingRef);
       
       if (snapshot.exists()) {
@@ -59,87 +47,20 @@ export const FirebaseService = {
     }
   },
 
-  // Get all buildings for a property manager
-  async getBuildingsForManager(managerId) {
-    try {
-      // Get manager's building assignments
-      const managerRef = ref(database, `property_managers/${managerId}`);
-      const managerSnapshot = await get(managerRef);
-      
-      if (!managerSnapshot.exists()) {
-        return { success: false, error: 'Manager not found' };
-      }
-      
-      const managerData = managerSnapshot.val();
-      const assignedBuildings = managerData.assignedBuildings || [];
-      
-      // Get building data for assigned buildings
-      const buildings = {};
-      for (const buildingId of assignedBuildings) {
-        const buildingResult = await this.getBuilding(buildingId);
-        if (buildingResult.success) {
-          buildings[buildingId] = buildingResult.data;
-        }
-      }
-      
-      return { success: true, buildings };
-    } catch (error) {
-      console.error('Error getting buildings for manager:', error);
-      return { success: false, error: error.message };
+  // Generate access code for units
+  generateUnitAccessCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-  },
-
-  // Assign building to property manager
-  async assignBuildingToManager(managerId, buildingId) {
-    try {
-      const managerRef = ref(database, `property_managers/${managerId}`);
-      const snapshot = await get(managerRef);
-      
-      if (!snapshot.exists()) {
-        return { success: false, error: 'Manager not found' };
-      }
-      
-      const managerData = snapshot.val();
-      const assignedBuildings = managerData.assignedBuildings || [];
-      
-      if (!assignedBuildings.includes(buildingId)) {
-        assignedBuildings.push(buildingId);
-        
-        await update(managerRef, {
-          assignedBuildings: assignedBuildings,
-          updatedAt: Date.now()
-        });
-      }
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error assigning building:', error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Add unit access codes to existing units
-  async addUnitAccessCodes(buildingId, unitAccessCodes) {
-    try {
-      const updates = {};
-      
-      Object.entries(unitAccessCodes).forEach(([unitId, accessCode]) => {
-        updates[`buildings/${buildingId}/units/${unitId}/accessCode`] = accessCode;
-        updates[`buildings/${buildingId}/units/${unitId}/updatedAt`] = Date.now();
-      });
-      
-      await update(ref(database), updates);
-      return { success: true };
-    } catch (error) {
-      console.error('Error adding access codes:', error);
-      return { success: false, error: error.message };
-    }
+    return result;
   },
 
   // Update unit access code
   async updateUnitAccessCode(buildingId, unitId, newAccessCode) {
     try {
-      const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
+      const unitRef = ref(database, `${buildingId}/units/${unitId}`);
       await update(unitRef, {
         accessCode: newAccessCode,
         updatedAt: Date.now()
@@ -155,7 +76,7 @@ export const FirebaseService = {
   // Update tenant information for a unit
   async updateUnitTenantInfo(buildingId, unitId, tenantInfo) {
     try {
-      const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
+      const unitRef = ref(database, `${buildingId}/units/${unitId}`);
       await update(unitRef, {
         tenantInfo: tenantInfo,
         updatedAt: Date.now()
@@ -168,9 +89,68 @@ export const FirebaseService = {
     }
   },
 
+  // Add new unit to building
+  async addUnit(buildingId, unitName) {
+    try {
+      // Get current units to determine next unit number
+      const buildingRef = ref(database, `${buildingId}/units`);
+      const snapshot = await get(buildingRef);
+      
+      let unitNumber = 1;
+      if (snapshot.exists()) {
+        const units = snapshot.val();
+        const unitNumbers = Object.keys(units)
+          .map(key => parseInt(key.replace('unit_', '')))
+          .filter(num => !isNaN(num));
+        
+        if (unitNumbers.length > 0) {
+          unitNumber = Math.max(...unitNumbers) + 1;
+        }
+      }
+      
+      const unitId = `unit_${String(unitNumber).padStart(3, '0')}`;
+      const unitRef = ref(database, `${buildingId}/units/${unitId}`);
+      
+      const unitData = {
+        name: unitName,
+        current: 0,
+        voltage: 0,
+        power: 0,
+        remaining_credit: 0,
+        remaining_units: 0,
+        timestamp: new Date().toISOString(),
+        isActive: true,
+        accessCode: this.generateUnitAccessCode(),
+        createdAt: Date.now()
+      };
+      
+      await set(unitRef, unitData);
+      return { success: true, unitId, data: unitData };
+    } catch (error) {
+      console.error('Error adding unit:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Deactivate unit
+  async deactivateUnit(buildingId, unitId) {
+    try {
+      const unitRef = ref(database, `${buildingId}/units/${unitId}`);
+      await update(unitRef, {
+        isActive: false,
+        deactivatedAt: Date.now()
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error deactivating unit:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
   // Subscribe to specific unit
   subscribeToUnit(buildingId, unitId, callback) {
-    const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
+    const unitRef = ref(database, `${buildingId}/units/${unitId}`);
     
     const unsubscribe = onValue(unitRef, (snapshot) => {
       const data = snapshot.val();
@@ -178,6 +158,39 @@ export const FirebaseService = {
     });
 
     return () => off(unitRef);
+  },
+
+  // Get all units for a building
+  async getUnits(buildingId) {
+    try {
+      const unitsRef = ref(database, `${buildingId}/units`);
+      const snapshot = await get(unitsRef);
+      
+      if (snapshot.exists()) {
+        return { success: true, data: snapshot.val() };
+      } else {
+        return { success: true, data: {} }; // Empty units object
+      }
+    } catch (error) {
+      console.error('Error getting units:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Update building information
+  async updateBuilding(buildingId, updates) {
+    try {
+      const buildingRef = ref(database, buildingId);
+      await update(buildingRef, {
+        ...updates,
+        updatedAt: Date.now()
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating building:', error);
+      return { success: false, error: error.message };
+    }
   }
 };
 
