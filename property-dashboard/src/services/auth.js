@@ -138,7 +138,41 @@ class AuthService {
     }
   }
 
-  // Login property manager
+  // Login with access code only
+  async loginWithAccessCode(accessCode) {
+    try {
+      // Search for manager by access code
+      const managersRef = ref(this.database, 'property_managers');
+      const snapshot = await get(managersRef);
+      
+      if (!snapshot.exists()) {
+        return { success: false, error: 'No property managers found' };
+      }
+
+      const managers = snapshot.val();
+      const manager = Object.values(managers).find(m => m.accessCode === accessCode && m.isActive);
+      
+      if (!manager) {
+        return { success: false, error: 'Invalid access code' };
+      }
+
+      // Update last login
+      const managerRef = ref(this.database, `property_managers/${manager.id}`);
+      await update(managerRef, { lastLogin: Date.now() });
+
+      this.currentUser = manager;
+      
+      // Store session
+      localStorage.setItem('propertyManager', JSON.stringify(manager));
+      
+      return { success: true, manager };
+    } catch (error) {
+      console.error('Error logging in:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Login property manager (old method for compatibility)
   async loginPropertyManager(mobileNumber, accessCode) {
     try {
       const manager = await this.checkPropertyManager(mobileNumber);
