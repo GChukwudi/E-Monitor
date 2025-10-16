@@ -1,30 +1,62 @@
-// src/services/auth.js
 import { getDatabase, ref, get, set, update } from 'firebase/database';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 
 class AuthService {
   constructor() {
-    this.database = getDatabase();
+    this.database = null;
     this.messaging = null;
     this.currentUser = null;
-    this.initializeMessaging();
+    this.isInitialized = false;
+    this.initializeFirebase();
+  }
+
+  async initializeFirebase() {
+    try {
+      // Initialize database
+      this.database = getDatabase();
+      
+      // Initialize messaging with support check
+      const messagingSupported = await isSupported();
+      if (messagingSupported) {
+        this.messaging = getMessaging();
+        await this.initializeMessaging();
+      } else {
+        console.warn('Firebase Messaging is not supported in this browser');
+      }
+      
+      this.isInitialized = true;
+    } catch (error) {
+      console.error('Error initializing Firebase services:', error);
+    }
   }
 
   async initializeMessaging() {
+    if (!this.messaging) return;
+    
     try {
-      this.messaging = getMessaging();
       // Request permission for notifications
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const token = await getToken(this.messaging, {
-          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
-        });
-        console.log('FCM Token:', token);
-        return token;
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+        if (vapidKey) {
+          const token = await getToken(this.messaging, { vapidKey });
+          console.log('FCM Token:', token);
+          return token;
+        } else {
+          console.warn('VAPID key not configured');
+        }
       }
     } catch (error) {
       console.error('Error initializing messaging:', error);
     }
+  }
+
+  // Ensure Firebase is initialized before database operations
+  async ensureInitialized() {
+    if (!this.isInitialized) {
+      await this.initializeFirebase();
+    }
+    return this.database !== null;
   }
 
   // Generate 6-digit OTP
@@ -45,6 +77,8 @@ class AuthService {
   // Send OTP using Firebase SMS Authentication
   async sendOTP(mobileNumber, otp = null) {
     try {
+      await this.ensureInitialized();
+      
       const useFirebaseSMS = import.meta.env.VITE_USE_FIREBASE_SMS === 'true';
       const testMode = import.meta.env.VITE_SMS_TEST_MODE === 'true';
       
@@ -82,6 +116,8 @@ class AuthService {
   // Verify OTP using Firebase SMS or fallback method
   async verifyOTP(mobileNumber, enteredOTP) {
     try {
+      await this.ensureInitialized();
+      
       const useFirebaseSMS = import.meta.env.VITE_USE_FIREBASE_SMS === 'true';
       const testMode = import.meta.env.VITE_SMS_TEST_MODE === 'true';
       
@@ -125,6 +161,8 @@ class AuthService {
   // Check if property manager exists
   async checkPropertyManager(mobileNumber) {
     try {
+      await this.ensureInitialized();
+      
       const managersRef = ref(this.database, 'property_managers');
       const snapshot = await get(managersRef);
       
@@ -143,6 +181,8 @@ class AuthService {
   // Register new property manager
   async registerPropertyManager(propertyData) {
     try {
+      await this.ensureInitialized();
+      
       const managerId = `manager_${Date.now()}`;
       const managerRef = ref(this.database, `property_managers/${managerId}`);
       
@@ -167,6 +207,8 @@ class AuthService {
   // Login with access code only
   async loginWithAccessCode(accessCode) {
     try {
+      await this.ensureInitialized();
+      
       // Search for manager by access code
       const managersRef = ref(this.database, 'property_managers');
       const snapshot = await get(managersRef);
@@ -201,6 +243,8 @@ class AuthService {
   // Login property manager (old method for compatibility)
   async loginPropertyManager(mobileNumber, accessCode) {
     try {
+      await this.ensureInitialized();
+      
       const manager = await this.checkPropertyManager(mobileNumber);
       
       if (!manager) {
@@ -234,6 +278,8 @@ class AuthService {
   // Reset access code
   async resetAccessCode(mobileNumber, newAccessCode) {
     try {
+      await this.ensureInitialized();
+      
       const manager = await this.checkPropertyManager(mobileNumber);
       
       if (!manager) {
@@ -279,21 +325,29 @@ class AuthService {
 
   // Setup FCM message listener
   onMessageListener() {
-    if (!this.messaging) return () => {};
+    if (!this.messaging) {
+      console.warn('Messaging not available');
+      return () => {}; // Return empty cleanup function
+    }
     
-    return onMessage(this.messaging, (payload) => {
-      console.log('Message received:', payload);
-      
-      // Show notification
-      if (payload.notification) {
-        new Notification(payload.notification.title, {
-          body: payload.notification.body,
-          icon: '/favicon.ico'
-        });
-      }
-      
-      return payload;
-    });
+    try {
+      return onMessage(this.messaging, (payload) => {
+        console.log('Message received:', payload);
+        
+        // Show notification
+        if (payload.notification) {
+          new Notification(payload.notification.title, {
+            body: payload.notification.body,
+            icon: '/favicon.ico'
+          });
+        }
+        
+        return payload;
+      });
+    } catch (error) {
+      console.error('Error setting up message listener:', error);
+      return () => {};
+    }
   }
 }
 
