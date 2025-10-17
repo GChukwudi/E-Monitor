@@ -192,11 +192,6 @@ const Header = ({
                   
                   <div className={styles.menuDivider}></div>
                   
-                  <button className={styles.menuItem}>
-                    <Settings size={16} />
-                    Account Settings
-                  </button>
-                  
                   <button 
                     className={`${styles.menuItem} ${styles.logoutItem}`}
                     onClick={handleLogout}

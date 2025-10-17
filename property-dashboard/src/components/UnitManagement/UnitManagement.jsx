@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   RotateCcw, 
@@ -8,7 +8,8 @@ import {
   Check,
   Power,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import FirebaseService from '../../services/firebase';
 import AuthService from '../../services/auth';
@@ -17,26 +18,123 @@ import styles from './UnitManagement.module.css';
 const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [showAccessCodes, setShowAccessCodes] = useState({});
+  const [temporaryAccessCodes, setTemporaryAccessCodes] = useState({}); // Store plain codes temporarily
   const [copiedCodes, setCopiedCodes] = useState({});
   const [loading, setLoading] = useState({});
   const [newUnitName, setNewUnitName] = useState('');
   const [addingUnit, setAddingUnit] = useState(false);
+  const [codeTimers, setCodeTimers] = useState({}); // Track countdown timers
 
   const units = property?.units || {};
   const currentUser = AuthService.getCurrentUser();
 
-  // Toggle showing access code
-  const toggleShowAccessCode = (unitId) => {
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(codeTimers).forEach(clearInterval);
+    };
+  }, [codeTimers]);
+
+  // Auto-hide access codes after 60 seconds
+  const startCodeTimer = (unitId, plainCode) => {
+    // Clear existing timer if any
+    if (codeTimers[unitId]) {
+      clearInterval(codeTimers[unitId]);
+    }
+
+    // Store the plain code temporarily
+    setTemporaryAccessCodes(prev => ({
+      ...prev,
+      [unitId]: {
+        code: plainCode,
+        expiresAt: Date.now() + 60000 // 60 seconds from now
+      }
+    }));
+
+    // Show the code
     setShowAccessCodes(prev => ({
       ...prev,
-      [unitId]: !prev[unitId]
+      [unitId]: true
+    }));
+
+    // Set timer to hide after 60 seconds
+    const timer = setTimeout(() => {
+      setShowAccessCodes(prev => ({
+        ...prev,
+        [unitId]: false
+      }));
+      
+      setTemporaryAccessCodes(prev => {
+        const newCodes = { ...prev };
+        delete newCodes[unitId];
+        return newCodes;
+      });
+      
+      setCodeTimers(prev => {
+        const newTimers = { ...prev };
+        delete newTimers[unitId];
+        return newTimers;
+      });
+    }, 60000);
+
+    setCodeTimers(prev => ({
+      ...prev,
+      [unitId]: timer
     }));
   };
 
+  // Toggle showing access code
+  const toggleShowAccessCode = (unitId) => {
+    const isCurrentlyVisible = showAccessCodes[unitId];
+    
+    if (isCurrentlyVisible) {
+      // Hide the code
+      setShowAccessCodes(prev => ({
+        ...prev,
+        [unitId]: false
+      }));
+      
+      // Clear timer if exists
+      if (codeTimers[unitId]) {
+        clearTimeout(codeTimers[unitId]);
+        setCodeTimers(prev => {
+          const newTimers = { ...prev };
+          delete newTimers[unitId];
+          return newTimers;
+        });
+      }
+      
+      // Clear temporary code
+      setTemporaryAccessCodes(prev => {
+        const newCodes = { ...prev };
+        delete newCodes[unitId];
+        return newCodes;
+      });
+    } else {
+      // Check if we have a temporary code
+      const tempCode = temporaryAccessCodes[unitId];
+      if (tempCode && tempCode.expiresAt > Date.now()) {
+        // Still valid, just show it
+        setShowAccessCodes(prev => ({
+          ...prev,
+          [unitId]: true
+        }));
+      } else {
+        alert('Access code is hidden for security. Use "Reset Code" to generate and view a new one.');
+      }
+    }
+  };
+
   // Copy access code to clipboard
-  const copyAccessCode = async (unitId, accessCode) => {
+  const copyAccessCode = async (unitId) => {
+    const tempCode = temporaryAccessCodes[unitId];
+    if (!tempCode || tempCode.expiresAt <= Date.now()) {
+      alert('No access code available to copy. Reset the code first.');
+      return;
+    }
+
     try {
-      await navigator.clipboard.writeText(accessCode);
+      await navigator.clipboard.writeText(tempCode.code);
       setCopiedCodes(prev => ({ ...prev, [unitId]: true }));
       
       setTimeout(() => {
@@ -56,24 +154,17 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
       const result = await FirebaseService.updateUnitAccessCode(buildingId, unitId, newAccessCode);
       
       if (result.success) {
+        // Start the 60-second timer with the new plain code
+        startCodeTimer(unitId, result.plainAccessCode || newAccessCode);
+        
         // Trigger property update to refresh data
         onPropertyUpdate();
-        
-        // Show the new access code temporarily
-        setShowAccessCodes(prev => ({
-          ...prev,
-          [unitId]: true
-        }));
-        
-        setTimeout(() => {
-          setShowAccessCodes(prev => ({
-            ...prev,
-            [unitId]: false
-          }));
-        }, 5000);
+      } else {
+        alert('Failed to reset access code: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Failed to reset access code:', error);
+      alert('Failed to reset access code. Please try again.');
     } finally {
       setLoading(prev => ({ ...prev, [unitId]: false }));
     }
@@ -90,12 +181,20 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
       
       if (result.success) {
         setNewUnitName('');
+        
+        // Start timer for the new unit's access code
+        if (result.plainAccessCode) {
+          startCodeTimer(result.unitId, result.plainAccessCode);
+        }
+        
         onPropertyUpdate(); // Refresh the property data
       } else {
         console.error('Failed to add unit:', result.error);
+        alert('Failed to add unit: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Failed to add unit:', error);
+      alert('Failed to add unit. Please try again.');
     } finally {
       setAddingUnit(false);
     }
@@ -117,26 +216,15 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
         setSelectedUnit(null); // Close details panel
       } else {
         console.error('Failed to deactivate unit:', result.error);
+        alert('Failed to deactivate unit: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Failed to deactivate unit:', error);
+      alert('Failed to deactivate unit. Please try again.');
     } finally {
       setLoading(prev => ({ ...prev, [`deactivate_${unitId}`]: false }));
     }
   };
-
-  // Update tenant information
-  // const updateTenantInfo = async (unitId, tenantInfo) => {
-  //   try {
-  //     const result = await FirebaseService.updateUnitTenantInfo(buildingId, unitId, tenantInfo);
-      
-  //     if (result.success) {
-  //       onPropertyUpdate();
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to update tenant info:', error);
-  //   }
-  // };
 
   // Get unit status
   const getUnitStatus = (unit) => {
@@ -156,6 +244,15 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
       case 'inactive': return '#9CA3AF';
       default: return '#9CA3AF';
     }
+  };
+
+  // Get remaining time for access code visibility
+  const getRemainingTime = (unitId) => {
+    const tempCode = temporaryAccessCodes[unitId];
+    if (!tempCode) return 0;
+    
+    const remaining = Math.max(0, tempCode.expiresAt - Date.now());
+    return Math.ceil(remaining / 1000); // Convert to seconds
   };
 
   return (
@@ -194,9 +291,11 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
         {Object.entries(units).map(([unitId, unit]) => {
           const status = getUnitStatus(unit);
           const isCodeVisible = showAccessCodes[unitId];
+          const tempCode = temporaryAccessCodes[unitId];
           const isCopied = copiedCodes[unitId];
           const isResetting = loading[unitId];
           const isDeactivating = loading[`deactivate_${unitId}`];
+          const remainingTime = getRemainingTime(unitId);
 
           return (
             <div key={unitId} className={styles.unitCard}>
@@ -210,19 +309,12 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                     {status}
                   </span>
                 </div>
-                
-                <div className={styles.unitActions}>
-                </div>
               </div>
 
               <div className={styles.unitMetrics}>
                 <div className={styles.metric}>
                   <Power size={16} />
                   <span>{parseFloat(unit.power || 0).toFixed(1)}W</span>
-                </div>
-                <div className={styles.metric}>
-                  <Shield size={16} />
-                  <span>₦{parseFloat(unit.remaining_credit || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -238,10 +330,10 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                       {isCodeVisible ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                     
-                    {isCodeVisible && unit.accessCode && (
+                    {isCodeVisible && tempCode && (
                       <button
                         className={styles.iconBtn}
-                        onClick={() => copyAccessCode(unitId, unit.accessCode)}
+                        onClick={() => copyAccessCode(unitId)}
                         title="Copy code"
                       >
                         {isCopied ? <Check size={14} /> : <Copy size={14} />}
@@ -251,8 +343,14 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                 </div>
                 
                 <div className={styles.accessCodeDisplay}>
-                  {isCodeVisible && unit.accessCode ? (
-                    <span className={styles.accessCode}>{unit.accessCode}</span>
+                  {isCodeVisible && tempCode && tempCode.expiresAt > Date.now() ? (
+                    <div className={styles.codeWithTimer}>
+                      <span className={styles.accessCode}>{tempCode.code}</span>
+                      <div className={styles.timer}>
+                        <Clock size={12} />
+                        <span>{remainingTime}s</span>
+                      </div>
+                    </div>
                   ) : (
                     <span className={styles.hiddenCode}>••••••••</span>
                   )}
@@ -266,11 +364,16 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                   <RotateCcw size={14} />
                   {isResetting ? 'Resetting...' : 'Reset Code'}
                 </button>
+                
+                {isCodeVisible && tempCode && (
+                  <div className={styles.securityNote}>
+                    <small>🔒 Code visible for {remainingTime}s for security</small>
+                  </div>
+                )}
               </div>
 
               {selectedUnit === unitId && (
                 <div className={styles.unitDetails}>
-
                   {unit.isActive && (
                     <div className={styles.dangerZone}>
                       <h4 className={styles.dangerTitle}>
@@ -296,158 +399,5 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
     </div>
   );
 };
-
-// Tenant Information Form Component
-// const TenantInfoForm = ({ tenantInfo, onSave }) => {
-//   const [formData, setFormData] = useState({
-//     name: tenantInfo?.name || '',
-//     phone: tenantInfo?.phone || '',
-//     email: tenantInfo?.email || '',
-//     moveInDate: tenantInfo?.moveInDate || '',
-//     notes: tenantInfo?.notes || ''
-//   });
-//   const [isEditing, setIsEditing] = useState(false);
-//   const [saving, setSaving] = useState(false);
-
-//   const handleInputChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData(prev => ({
-//       ...prev,
-//       [name]: value
-//     }));
-//   };
-
-//   const handleSave = async () => {
-//     setSaving(true);
-//     try {
-//       await onSave(formData);
-//       setIsEditing(false);
-//     } catch (error) {
-//       console.error('Failed to save tenant info:', error);
-//     } finally {
-//       setSaving(false);
-//     }
-//   };
-
-//   const handleCancel = () => {
-//     setFormData({
-//       name: tenantInfo?.name || '',
-//       phone: tenantInfo?.phone || '',
-//       email: tenantInfo?.email || '',
-//       moveInDate: tenantInfo?.moveInDate || '',
-//       notes: tenantInfo?.notes || ''
-//     });
-//     setIsEditing(false);
-//   };
-
-//   if (!isEditing && !tenantInfo?.name) {
-//     return (
-//       <div className={styles.emptyTenant}>
-//         <p>No tenant information added</p>
-//         <button 
-//           className={styles.addTenantBtn}
-//           onClick={() => setIsEditing(true)}
-//         >
-//           Add Tenant Info
-//         </button>
-//       </div>
-//     );
-//   }
-
-//   if (!isEditing) {
-//     return (
-//       <div className={styles.tenantDisplay}>
-//         <div className={styles.tenantInfo}>
-//           <p><strong>Name:</strong> {tenantInfo.name}</p>
-//           {tenantInfo.phone && <p><strong>Phone:</strong> {tenantInfo.phone}</p>}
-//           {tenantInfo.email && <p><strong>Email:</strong> {tenantInfo.email}</p>}
-//           {tenantInfo.moveInDate && <p><strong>Move-in Date:</strong> {tenantInfo.moveInDate}</p>}
-//           {tenantInfo.notes && <p><strong>Notes:</strong> {tenantInfo.notes}</p>}
-//         </div>
-//         <button 
-//           className={styles.editBtn}
-//           onClick={() => setIsEditing(true)}
-//         >
-//           Edit
-//         </button>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className={styles.tenantForm}>
-//       <div className={styles.formRow}>
-//         <input
-//           type="text"
-//           name="name"
-//           value={formData.name}
-//           onChange={handleInputChange}
-//           placeholder="Tenant name"
-//           className={styles.formInput}
-//         />
-//       </div>
-      
-//       <div className={styles.formRow}>
-//         <input
-//           type="tel"
-//           name="phone"
-//           value={formData.phone}
-//           onChange={handleInputChange}
-//           placeholder="Phone number"
-//           className={styles.formInput}
-//         />
-//       </div>
-      
-//       <div className={styles.formRow}>
-//         <input
-//           type="email"
-//           name="email"
-//           value={formData.email}
-//           onChange={handleInputChange}
-//           placeholder="Email address"
-//           className={styles.formInput}
-//         />
-//       </div>
-      
-//       <div className={styles.formRow}>
-//         <input
-//           type="date"
-//           name="moveInDate"
-//           value={formData.moveInDate}
-//           onChange={handleInputChange}
-//           className={styles.formInput}
-//         />
-//       </div>
-      
-//       <div className={styles.formRow}>
-//         <textarea
-//           name="notes"
-//           value={formData.notes}
-//           onChange={handleInputChange}
-//           placeholder="Additional notes"
-//           className={styles.formTextarea}
-//           rows={3}
-//         />
-//       </div>
-      
-//       <div className={styles.formActions}>
-//         <button 
-//           className={styles.saveBtn}
-//           onClick={handleSave}
-//           disabled={saving || !formData.name.trim()}
-//         >
-//           {saving ? 'Saving...' : 'Save'}
-//         </button>
-//         <button 
-//           className={styles.cancelBtn}
-//           onClick={handleCancel}
-//           disabled={saving}
-//         >
-//           Cancel
-//         </button>
-//       </div>
-//     </div>
-//   );
-// };
 
 export default UnitManagement;

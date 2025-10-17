@@ -15,6 +15,32 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 export const FirebaseService = {
+  // Hash function for unit access codes (same as AuthService)
+  async hashUnitAccessCode(accessCode) {
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(accessCode + 'unit_salt_2024');
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (error) {
+      console.error('Error hashing unit access code:', error);
+      // Fallback to simple encoding for development
+      return btoa(accessCode + 'unit_salt_2024');
+    }
+  },
+
+  // Verify unit access code against hash
+  async verifyUnitAccessCode(accessCode, hashedCode) {
+    try {
+      const newHash = await this.hashUnitAccessCode(accessCode);
+      return newHash === hashedCode;
+    } catch (error) {
+      console.error('Error verifying unit access code:', error);
+      return false;
+    }
+  },
+
   // Subscribe to building using buildingId under buildings/ path
   subscribeToBuilding(buildingId, callback) {
     const buildingRef = ref(database, `buildings/${buildingId}`);
@@ -57,42 +83,30 @@ export const FirebaseService = {
     return result;
   },
 
-  // Update unit access code
+  // Update unit access code - NOW WITH HASHING
   async updateUnitAccessCode(buildingId, unitId, newAccessCode) {
     try {
+      // Hash the access code before storing
+      const hashedAccessCode = await this.hashUnitAccessCode(newAccessCode);
+      
       const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
       await update(unitRef, {
-        accessCode: newAccessCode,
+        accessCode: hashedAccessCode, // Store hashed version
+        accessCodeUpdatedAt: Date.now(),
         updatedAt: Date.now()
       });
       
-      return { success: true };
+      return { success: true, plainAccessCode: newAccessCode }; // Return plain code for display
     } catch (error) {
       console.error('Error updating access code:', error);
       return { success: false, error: error.message };
     }
   },
 
-  // Update tenant information for a unit - FIXED PATH
-  // async updateUnitTenantInfo(buildingId, unitId, tenantInfo) {
-  //   try {
-  //     const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
-  //     await update(unitRef, {
-  //       tenantInfo: tenantInfo,
-  //       updatedAt: Date.now()
-  //     });
-      
-  //     return { success: true };
-  //   } catch (error) {
-  //     console.error('Error updating tenant info:', error);
-  //     return { success: false, error: error.message };
-  //   }
-  // },
-
-  // Add new unit to building - FIXED PATH
+  // Add new unit to building - NOW WITH HASHED ACCESS CODE
   async addUnit(buildingId, unitName) {
     try {
-      // Get current units to determine next unit number - FIXED PATH
+      // Get current units to determine next unit number
       const buildingRef = ref(database, `buildings/${buildingId}/units`);
       const snapshot = await get(buildingRef);
       
@@ -111,6 +125,10 @@ export const FirebaseService = {
       const unitId = `unit_${String(unitNumber).padStart(3, '0')}`;
       const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
       
+      // Generate and hash the access code
+      const plainAccessCode = this.generateUnitAccessCode();
+      const hashedAccessCode = await this.hashUnitAccessCode(plainAccessCode);
+      
       const unitData = {
         name: unitName,
         current: 0,
@@ -120,19 +138,26 @@ export const FirebaseService = {
         remaining_units: 0,
         timestamp: new Date().toISOString(),
         isActive: true,
-        accessCode: this.generateUnitAccessCode(),
+        accessCode: hashedAccessCode, // Store hashed version
+        accessCodeUpdatedAt: Date.now(),
         createdAt: Date.now()
       };
       
       await set(unitRef, unitData);
-      return { success: true, unitId, data: unitData };
+      
+      return { 
+        success: true, 
+        unitId, 
+        data: unitData,
+        plainAccessCode: plainAccessCode // Return plain code for initial display
+      };
     } catch (error) {
       console.error('Error adding unit:', error);
       return { success: false, error: error.message };
     }
   },
 
-  // Deactivate unit - FIXED PATH
+  // Deactivate unit
   async deactivateUnit(buildingId, unitId) {
     try {
       const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
@@ -148,7 +173,7 @@ export const FirebaseService = {
     }
   },
 
-  // Subscribe to specific unit - FIXED PATH
+  // Subscribe to specific unit
   subscribeToUnit(buildingId, unitId, callback) {
     const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
     
@@ -160,7 +185,7 @@ export const FirebaseService = {
     return () => off(unitRef);
   },
 
-  // Get all units for a building - FIXED PATH
+  // Get all units for a building
   async getUnits(buildingId) {
     try {
       const unitsRef = ref(database, `buildings/${buildingId}/units`);
@@ -177,7 +202,7 @@ export const FirebaseService = {
     }
   },
 
-  // Update building information - FIXED PATH
+  // Update building information
   async updateBuilding(buildingId, updates) {
     try {
       const buildingRef = ref(database, `buildings/${buildingId}`);
@@ -189,6 +214,37 @@ export const FirebaseService = {
       return { success: true };
     } catch (error) {
       console.error('Error updating building:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Verify unit access code for tenant login (if needed)
+  async verifyUnitLogin(buildingId, unitId, accessCode) {
+    try {
+      const unitRef = ref(database, `buildings/${buildingId}/units/${unitId}`);
+      const snapshot = await get(unitRef);
+      
+      if (!snapshot.exists()) {
+        return { success: false, error: 'Unit not found' };
+      }
+
+      const unit = snapshot.val();
+      
+      if (!unit.isActive) {
+        return { success: false, error: 'Unit is inactive' };
+      }
+
+      const isValid = await this.verifyUnitAccessCode(accessCode, unit.accessCode);
+      
+      if (isValid) {
+        // Update last access time
+        await update(unitRef, { lastAccess: Date.now() });
+        return { success: true, unit: unit };
+      } else {
+        return { success: false, error: 'Invalid access code' };
+      }
+    } catch (error) {
+      console.error('Error verifying unit login:', error);
       return { success: false, error: error.message };
     }
   }
