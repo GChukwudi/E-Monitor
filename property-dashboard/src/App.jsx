@@ -295,10 +295,9 @@ function App() {
           buildingName={property.name}
           alertCount={alerts.length}
           onDownloadReport={handleDownloadReport}
-          onToggleMobileMenu={() => setShowMobileMenu(!showMobileMenu)}
-          showMobileMenu={showMobileMenu}
           currentUser={currentUser}
           onLogout={handleLogout}
+          units={units}
         />
         
         <Navigation

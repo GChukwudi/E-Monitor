@@ -1,5 +1,3 @@
-// src/components/StatCard/StatCard.jsx
-import React from 'react';
 import styles from './StatCard.module.css';
 
 const StatCard = ({ title, value, icon: Icon, subtitle }) => {

@@ -33,7 +33,6 @@ const Dashboard = ({ building, stats, alerts, chartData, pieData }) => {
 
   return (
     <div className={styles.dashboard}>
-      <AlertBanner alerts={alerts} />
 
       <div className={styles.statsGrid}>
         <StatCard
@@ -47,12 +46,6 @@ const Dashboard = ({ building, stats, alerts, chartData, pieData }) => {
           value={actionableStats.operational}
           icon={Activity}
           subtitle="No action required"
-        />
-        <StatCard
-          title="Require Attention"
-          value={actionableStats.requiresAttention}
-          icon={AlertTriangle}
-          subtitle="Low credit notifications needed"
         />
         <StatCard
           title="Total Power"
