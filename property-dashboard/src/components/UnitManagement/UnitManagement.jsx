@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import { 
   Plus, 
   RotateCcw, 
-  Settings, 
   Eye, 
   EyeOff, 
   Copy, 
   Check,
-  User,
   Power,
   Shield,
   AlertTriangle
@@ -128,17 +126,17 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
   };
 
   // Update tenant information
-  const updateTenantInfo = async (unitId, tenantInfo) => {
-    try {
-      const result = await FirebaseService.updateUnitTenantInfo(buildingId, unitId, tenantInfo);
+  // const updateTenantInfo = async (unitId, tenantInfo) => {
+  //   try {
+  //     const result = await FirebaseService.updateUnitTenantInfo(buildingId, unitId, tenantInfo);
       
-      if (result.success) {
-        onPropertyUpdate();
-      }
-    } catch (error) {
-      console.error('Failed to update tenant info:', error);
-    }
-  };
+  //     if (result.success) {
+  //       onPropertyUpdate();
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to update tenant info:', error);
+  //   }
+  // };
 
   // Get unit status
   const getUnitStatus = (unit) => {
@@ -214,13 +212,6 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
                 </div>
                 
                 <div className={styles.unitActions}>
-                  <button
-                    className={styles.actionBtn}
-                    onClick={() => setSelectedUnit(selectedUnit === unitId ? null : unitId)}
-                    title="View details"
-                  >
-                    <Settings size={16} />
-                  </button>
                 </div>
               </div>
 
@@ -279,17 +270,6 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
 
               {selectedUnit === unitId && (
                 <div className={styles.unitDetails}>
-                  <div className={styles.tenantSection}>
-                    <h4 className={styles.sectionTitle}>
-                      <User size={16} />
-                      Tenant Information
-                    </h4>
-                    
-                    <TenantInfoForm
-                      tenantInfo={unit.tenantInfo}
-                      onSave={(info) => updateTenantInfo(unitId, info)}
-                    />
-                  </div>
 
                   {unit.isActive && (
                     <div className={styles.dangerZone}>
@@ -318,156 +298,156 @@ const UnitManagement = ({ property, buildingId, onPropertyUpdate }) => {
 };
 
 // Tenant Information Form Component
-const TenantInfoForm = ({ tenantInfo, onSave }) => {
-  const [formData, setFormData] = useState({
-    name: tenantInfo?.name || '',
-    phone: tenantInfo?.phone || '',
-    email: tenantInfo?.email || '',
-    moveInDate: tenantInfo?.moveInDate || '',
-    notes: tenantInfo?.notes || ''
-  });
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
+// const TenantInfoForm = ({ tenantInfo, onSave }) => {
+//   const [formData, setFormData] = useState({
+//     name: tenantInfo?.name || '',
+//     phone: tenantInfo?.phone || '',
+//     email: tenantInfo?.email || '',
+//     moveInDate: tenantInfo?.moveInDate || '',
+//     notes: tenantInfo?.notes || ''
+//   });
+//   const [isEditing, setIsEditing] = useState(false);
+//   const [saving, setSaving] = useState(false);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+//   const handleInputChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({
+//       ...prev,
+//       [name]: value
+//     }));
+//   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await onSave(formData);
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to save tenant info:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
+//   const handleSave = async () => {
+//     setSaving(true);
+//     try {
+//       await onSave(formData);
+//       setIsEditing(false);
+//     } catch (error) {
+//       console.error('Failed to save tenant info:', error);
+//     } finally {
+//       setSaving(false);
+//     }
+//   };
 
-  const handleCancel = () => {
-    setFormData({
-      name: tenantInfo?.name || '',
-      phone: tenantInfo?.phone || '',
-      email: tenantInfo?.email || '',
-      moveInDate: tenantInfo?.moveInDate || '',
-      notes: tenantInfo?.notes || ''
-    });
-    setIsEditing(false);
-  };
+//   const handleCancel = () => {
+//     setFormData({
+//       name: tenantInfo?.name || '',
+//       phone: tenantInfo?.phone || '',
+//       email: tenantInfo?.email || '',
+//       moveInDate: tenantInfo?.moveInDate || '',
+//       notes: tenantInfo?.notes || ''
+//     });
+//     setIsEditing(false);
+//   };
 
-  if (!isEditing && !tenantInfo?.name) {
-    return (
-      <div className={styles.emptyTenant}>
-        <p>No tenant information added</p>
-        <button 
-          className={styles.addTenantBtn}
-          onClick={() => setIsEditing(true)}
-        >
-          Add Tenant Info
-        </button>
-      </div>
-    );
-  }
+//   if (!isEditing && !tenantInfo?.name) {
+//     return (
+//       <div className={styles.emptyTenant}>
+//         <p>No tenant information added</p>
+//         <button 
+//           className={styles.addTenantBtn}
+//           onClick={() => setIsEditing(true)}
+//         >
+//           Add Tenant Info
+//         </button>
+//       </div>
+//     );
+//   }
 
-  if (!isEditing) {
-    return (
-      <div className={styles.tenantDisplay}>
-        <div className={styles.tenantInfo}>
-          <p><strong>Name:</strong> {tenantInfo.name}</p>
-          {tenantInfo.phone && <p><strong>Phone:</strong> {tenantInfo.phone}</p>}
-          {tenantInfo.email && <p><strong>Email:</strong> {tenantInfo.email}</p>}
-          {tenantInfo.moveInDate && <p><strong>Move-in Date:</strong> {tenantInfo.moveInDate}</p>}
-          {tenantInfo.notes && <p><strong>Notes:</strong> {tenantInfo.notes}</p>}
-        </div>
-        <button 
-          className={styles.editBtn}
-          onClick={() => setIsEditing(true)}
-        >
-          Edit
-        </button>
-      </div>
-    );
-  }
+//   if (!isEditing) {
+//     return (
+//       <div className={styles.tenantDisplay}>
+//         <div className={styles.tenantInfo}>
+//           <p><strong>Name:</strong> {tenantInfo.name}</p>
+//           {tenantInfo.phone && <p><strong>Phone:</strong> {tenantInfo.phone}</p>}
+//           {tenantInfo.email && <p><strong>Email:</strong> {tenantInfo.email}</p>}
+//           {tenantInfo.moveInDate && <p><strong>Move-in Date:</strong> {tenantInfo.moveInDate}</p>}
+//           {tenantInfo.notes && <p><strong>Notes:</strong> {tenantInfo.notes}</p>}
+//         </div>
+//         <button 
+//           className={styles.editBtn}
+//           onClick={() => setIsEditing(true)}
+//         >
+//           Edit
+//         </button>
+//       </div>
+//     );
+//   }
 
-  return (
-    <div className={styles.tenantForm}>
-      <div className={styles.formRow}>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          placeholder="Tenant name"
-          className={styles.formInput}
-        />
-      </div>
+//   return (
+//     <div className={styles.tenantForm}>
+//       <div className={styles.formRow}>
+//         <input
+//           type="text"
+//           name="name"
+//           value={formData.name}
+//           onChange={handleInputChange}
+//           placeholder="Tenant name"
+//           className={styles.formInput}
+//         />
+//       </div>
       
-      <div className={styles.formRow}>
-        <input
-          type="tel"
-          name="phone"
-          value={formData.phone}
-          onChange={handleInputChange}
-          placeholder="Phone number"
-          className={styles.formInput}
-        />
-      </div>
+//       <div className={styles.formRow}>
+//         <input
+//           type="tel"
+//           name="phone"
+//           value={formData.phone}
+//           onChange={handleInputChange}
+//           placeholder="Phone number"
+//           className={styles.formInput}
+//         />
+//       </div>
       
-      <div className={styles.formRow}>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          placeholder="Email address"
-          className={styles.formInput}
-        />
-      </div>
+//       <div className={styles.formRow}>
+//         <input
+//           type="email"
+//           name="email"
+//           value={formData.email}
+//           onChange={handleInputChange}
+//           placeholder="Email address"
+//           className={styles.formInput}
+//         />
+//       </div>
       
-      <div className={styles.formRow}>
-        <input
-          type="date"
-          name="moveInDate"
-          value={formData.moveInDate}
-          onChange={handleInputChange}
-          className={styles.formInput}
-        />
-      </div>
+//       <div className={styles.formRow}>
+//         <input
+//           type="date"
+//           name="moveInDate"
+//           value={formData.moveInDate}
+//           onChange={handleInputChange}
+//           className={styles.formInput}
+//         />
+//       </div>
       
-      <div className={styles.formRow}>
-        <textarea
-          name="notes"
-          value={formData.notes}
-          onChange={handleInputChange}
-          placeholder="Additional notes"
-          className={styles.formTextarea}
-          rows={3}
-        />
-      </div>
+//       <div className={styles.formRow}>
+//         <textarea
+//           name="notes"
+//           value={formData.notes}
+//           onChange={handleInputChange}
+//           placeholder="Additional notes"
+//           className={styles.formTextarea}
+//           rows={3}
+//         />
+//       </div>
       
-      <div className={styles.formActions}>
-        <button 
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={saving || !formData.name.trim()}
-        >
-          {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button 
-          className={styles.cancelBtn}
-          onClick={handleCancel}
-          disabled={saving}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-};
+//       <div className={styles.formActions}>
+//         <button 
+//           className={styles.saveBtn}
+//           onClick={handleSave}
+//           disabled={saving || !formData.name.trim()}
+//         >
+//           {saving ? 'Saving...' : 'Save'}
+//         </button>
+//         <button 
+//           className={styles.cancelBtn}
+//           onClick={handleCancel}
+//           disabled={saving}
+//         >
+//           Cancel
+//         </button>
+//       </div>
+//     </div>
+//   );
+// };
 
 export default UnitManagement;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'screens/home_page.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,12 +17,12 @@ class ElectricityMonitorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Smart Energy Monitor',
+      title: 'Energy Monitor',
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFFAFAFA),
         colorScheme: const ColorScheme.light(
-          primary: Color(0xFF8BA98C),
+          primary: Color(0xFF84A98C),
           secondary: Color(0xFFE07A5F),
           surface: Color(0xFFF5F5F4),
           error: Color(0xFFE07A5F),
@@ -66,7 +66,7 @@ class ElectricityMonitorApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomePage(),
+      home: const LoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
@@ -8,8 +6,13 @@ import '../widgets/metric_card.dart';
 
 class DashboardView extends StatefulWidget {
   final String unitId;
+  final String buildingId; // Added buildingId parameter
 
-  const DashboardView({super.key, required this.unitId});
+  const DashboardView({
+    super.key,
+    required this.unitId,
+    this.buildingId = 'building_001',
+  });
 
   @override
   State<DashboardView> createState() => _DashboardViewState();
@@ -31,7 +34,7 @@ class _DashboardViewState extends State<DashboardView> {
   void _checkConnection() async {
     try {
       final snapshot = await _database
-          .child('buildings/building_001/units/${widget.unitId}')
+          .child('buildings/${widget.buildingId}/units/${widget.unitId}')
           .once();
 
       if (snapshot.snapshot.value != null) {
@@ -53,20 +56,28 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   void didUpdateWidget(DashboardView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.unitId != widget.unitId) {
+    if (oldWidget.unitId != widget.unitId ||
+        oldWidget.buildingId != widget.buildingId) {
       _subscription?.cancel();
       _listenToData();
     }
   }
 
   void _listenToData() {
-    final path = 'buildings/building_001/units/${widget.unitId}';
+    final path = 'buildings/${widget.buildingId}/units/${widget.unitId}';
 
     _subscription = _database.child(path).onValue.listen((event) {
       if (event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+
+        // Check if unit is still active
+        if (!(data['isActive'] ?? true)) {
+          _showUnitDeactivatedDialog();
+          return;
+        }
+
         setState(() {
-          _liveData = PrepaidMeterData.fromMap(
-              event.snapshot.value as Map<dynamic, dynamic>);
+          _liveData = PrepaidMeterData.fromMap(data);
           _connectionStatus = 'Live';
         });
       }
@@ -75,6 +86,30 @@ class _DashboardViewState extends State<DashboardView> {
         _connectionStatus = 'Error: $error';
       });
     });
+  }
+
+  void _showUnitDeactivatedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Unit Deactivated'),
+        content: const Text(
+            'Your unit has been deactivated by the property manager. Please contact them for assistance.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -87,6 +122,7 @@ class _DashboardViewState extends State<DashboardView> {
     return '₦${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
   }
 
+  // Rest of your existing build method stays exactly the same
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -674,7 +710,10 @@ class _DashboardViewState extends State<DashboardView> {
     final newCredit = (_liveData?.remainingCredit ?? 0) + amount;
     final newUnits = (_liveData?.remainingUnits ?? 0) + units;
 
-    _database.child('buildings/building_001/units/${widget.unitId}').update({
+    // Updated to use dynamic building ID
+    _database
+        .child('buildings/${widget.buildingId}/units/${widget.unitId}')
+        .update({
       'remaining_credit': newCredit,
       'remaining_units': newUnits,
     });

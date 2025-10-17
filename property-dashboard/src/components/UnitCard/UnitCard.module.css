@@ -137,10 +137,10 @@
   margin: 0.5rem 0 0 0;
 }
 
-.timestamp {
+/* .timestamp {
   font-size: 0.75rem;
   color: var(--text-light);
-}
+} */
 
 @media (max-width: 768px) {
   .card {

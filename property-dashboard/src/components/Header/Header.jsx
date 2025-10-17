@@ -68,16 +68,11 @@ const Header = ({
                   <div className={styles.userInfo}>
                     <div className={styles.userDetails}>
                       <p className={styles.userNameFull}>{currentUser?.propertyName}</p>
-                      <p className={styles.userPhone}>{currentUser?.mobileNumber}</p>
+                      {/* <p className={styles.userPhone}>{currentUser?.mobileNumber}</p> */}
                     </div>
                   </div>
                   
                   <div className={styles.menuDivider}></div>
-                  
-                  <button className={styles.menuItem}>
-                    <Settings size={16} />
-                    Account Settings
-                  </button>
                   
                   <button 
                     className={`${styles.menuItem} ${styles.logoutItem}`}

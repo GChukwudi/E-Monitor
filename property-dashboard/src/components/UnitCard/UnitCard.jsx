@@ -61,9 +61,9 @@ const UnitCard = ({ unitId, unit, onClick }) => {
         </p>
       </div>
 
-      <div className={styles.timestamp}>
+      {/* <div className={styles.timestamp}>
         Last update: {unit.timestamp || 'N/A'}
-      </div>
+      </div> */}
     </div>
   );
 };

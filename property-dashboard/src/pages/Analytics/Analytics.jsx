@@ -21,7 +21,7 @@ const Analytics = ({ units }) => {
                 <th>Current (A)</th>
                 <th>Voltage (V)</th>
                 <th>Credit</th>
-                <th>Last Update</th>
+                {/* <th>Last Update</th> */}
               </tr>
             </thead>
             <tbody>
@@ -53,9 +53,9 @@ const Analytics = ({ units }) => {
                     </div>
                   </td>
                   <td>
-                    <div className={styles.timestampCell}>
+                    {/* <div className={styles.timestampCell}>
                       {unit.timestamp || 'N/A'}
-                    </div>
+                    </div> */}
                   </td>
                 </tr>
               ))}
