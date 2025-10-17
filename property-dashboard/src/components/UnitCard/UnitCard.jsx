@@ -14,13 +14,38 @@ const UnitCard = ({ unitId, unit, onClick }) => {
     }
   };
 
-  const TARIFF_RATE = 209.5;
+  // Privacy-focused: Only show actionable status
+  const getActionableStatus = (unit) => {
+    const credit = parseFloat(unit.remaining_credit || 0);
+    
+    if (credit === 0) {
+      return {
+        status: "Unit disconnected",
+        action: "Service interruption - requires intervention",
+        priority: "critical"
+      };
+    } else if (credit < 500) {
+      return {
+        status: "Unit requires attention", 
+        action: "Contact tenant for credit top-up",
+        priority: "critical"
+      };
+    } else if (credit < 1000) {
+      return {
+        status: "Unit requires attention",
+        action: "Low credit notification recommended", 
+        priority: "warning"
+      };
+    } else {
+      return {
+        status: "Unit operational",
+        action: "No action required",
+        priority: "good"
+      };
+    }
+  };
 
-  const MAX_UNITS = 100;
-
-  const remainingUnits = parseFloat(unit.remaining_credit || 0) / TARIFF_RATE;
-
-  const creditPercentage = Math.min((remainingUnits / MAX_UNITS) * 100, 100);
+  const actionableStatus = getActionableStatus(unit);
 
   return (
     <div className={styles.card} onClick={onClick}>
@@ -45,25 +70,21 @@ const UnitCard = ({ unitId, unit, onClick }) => {
         </div>
       </div>
 
-      <div className={styles.creditSection}>
-        <div className={styles.creditInfo}>
-          <span className={styles.creditLabel}>Credit Remaining</span>
-          <span className={styles.creditValue}>₦{parseFloat(unit.remaining_credit || 0).toFixed(2)}</span>
+      {/* Privacy-focused: Only show actionable information */}
+      <div className={styles.actionableSection}>
+        <div className={styles.statusInfo}>
+          <span className={styles.statusLabel}>Service Status</span>
+          <span className={`${styles.statusValue} ${styles[actionableStatus.priority]}`}>
+            {actionableStatus.status}
+          </span>
         </div>
-        <div className={styles.progressBar}>
-          <div 
-            className={styles.progressFill}
-            style={{ width: `${creditPercentage}%` }}
-          />
-        </div>
-        <p className={styles.unitsRemaining}>
-          {remainingUnits.toFixed(1)} kWh remaining
-        </p>
+        
+        {actionableStatus.priority !== 'good' && (
+          <div className={styles.actionRequired}>
+            <p className={styles.actionText}>{actionableStatus.action}</p>
+          </div>
+        )}
       </div>
-
-      {/* <div className={styles.timestamp}>
-        Last update: {unit.timestamp || 'N/A'}
-      </div> */}
     </div>
   );
 };

@@ -5,10 +5,21 @@ import styles from './Analytics.module.css';
 const Analytics = ({ units }) => {
   const unitEntries = Object.entries(units || {});
   
+  // Privacy-focused: Only show operational status
+  const getOperationalStatus = (unit) => {
+    const credit = parseFloat(unit.remaining_credit || 0);
+    
+    if (credit === 0) return "Disconnected";
+    if (credit < 500) return "Critical";
+    if (credit < 1000) return "Attention Required";
+    return "Operational";
+  };
+  
   return (
     <div className={styles.analytics}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Detailed Unit Metrics</h2>
+        <h2 className={styles.title}>Unit Status Overview</h2>
+        <p className={styles.subtitle}>Operational status and power metrics</p>
       </div>
 
       <div className={styles.tableCard}>
@@ -17,11 +28,10 @@ const Analytics = ({ units }) => {
             <thead>
               <tr>
                 <th>Unit</th>
+                <th>Status</th>
                 <th>Power (W)</th>
                 <th>Current (A)</th>
                 <th>Voltage (V)</th>
-                <th>Credit</th>
-                {/* <th>Last Update</th> */}
               </tr>
             </thead>
             <tbody>
@@ -30,6 +40,11 @@ const Analytics = ({ units }) => {
                   <td>
                     <div className={styles.unitCell}>
                       {unitId.replace('unit_', 'House ')}
+                    </div>
+                  </td>
+                  <td>
+                    <div className={`${styles.statusCell} ${styles[getOperationalStatus(unit).toLowerCase().replace(' ', '')]}`}>
+                      {getOperationalStatus(unit)}
                     </div>
                   </td>
                   <td>
@@ -46,16 +61,6 @@ const Analytics = ({ units }) => {
                     <div className={styles.valueCell}>
                       {parseFloat(unit.voltage || 0).toFixed(2)}
                     </div>
-                  </td>
-                  <td>
-                    <div className={styles.creditCell}>
-                      ₦{parseFloat(unit.remaining_credit || 0).toFixed(2)}
-                    </div>
-                  </td>
-                  <td>
-                    {/* <div className={styles.timestampCell}>
-                      {unit.timestamp || 'N/A'}
-                    </div> */}
                   </td>
                 </tr>
               ))}

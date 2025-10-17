@@ -91,56 +91,65 @@
   line-height: 1;
 }
 
-.creditSection {
+/* Privacy-focused: Actionable status section */
+.actionableSection {
   background: var(--off-white);
   border-radius: var(--radius-sm);
   padding: 1rem;
   margin-bottom: 1rem;
 }
 
-.creditInfo {
+.statusInfo {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
 }
 
-.creditLabel {
+.statusLabel {
   font-size: 0.75rem;
   color: var(--text-gray);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.creditValue {
+.statusValue {
   font-size: 0.875rem;
   font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.statusValue.good {
+  background: rgba(132, 169, 140, 0.1);
+  color: var(--sage-green);
+}
+
+.statusValue.warning {
+  background: rgba(224, 122, 95, 0.1);
+  color: var(--terracotta);
+}
+
+.statusValue.critical {
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+}
+
+.actionRequired {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--terracotta);
+}
+
+.actionText {
+  font-size: 0.75rem;
   color: var(--charcoal);
+  margin: 0;
+  font-weight: 500;
 }
-
-.progressBar {
-  width: 100%;
-  height: 8px;
-  background: rgba(209, 213, 219, 0.5);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--sage-green), var(--dark-sage));
-  border-radius: 4px;
-  transition: width 0.5s ease;
-}
-
-.unitsRemaining {
-  font-size: 0.75rem;
-  color: var(--text-light);
-  margin: 0.5rem 0 0 0;
-}
-
-/* .timestamp {
-  font-size: 0.75rem;
-  color: var(--text-light);
-} */
 
 @media (max-width: 768px) {
   .card {
