@@ -230,7 +230,7 @@ class _DashboardViewState extends State<DashboardView> {
                       ),
                       const SizedBox(width: 12),
                       const Text(
-                        'Prepaid Balance',
+                        'Balance',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 17,

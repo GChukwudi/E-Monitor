@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/tenant_unit.dart';
 import 'dashboard_view.dart';
 import 'history_view.dart';
-import 'billing_view.dart';
 import 'login_screen.dart';
 
 class HomePage extends StatefulWidget {
@@ -278,7 +277,6 @@ class _HomePageState extends State<HomePage> {
                       widget.buildingId ?? 'building_001', // Default fallback
                 ),
                 HistoryView(unitId: _selectedUnit),
-                BillingView(unitId: _selectedUnit, units: units),
               ],
             ),
           ),
@@ -307,11 +305,6 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.history_outlined),
               activeIcon: Icon(Icons.history),
               label: 'History',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_outlined),
-              activeIcon: Icon(Icons.receipt_long),
-              label: 'Billing',
             ),
           ],
         ),
