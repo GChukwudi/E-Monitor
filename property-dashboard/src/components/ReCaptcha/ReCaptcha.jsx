@@ -12,7 +12,7 @@ const ReCaptcha = ({ onLoad }) => {
     <div 
       id="recaptcha-container" 
       style={{ 
-        visibility: 'hidden',
+        visibility: 'visible',
         position: 'absolute',
         top: '-9999px',
         left: '-9999px'

@@ -139,15 +139,24 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
     setLoading(true);
 
     try {
-      // Send OTP for mobile verification
-      const otp = AuthService.generateOTP();
-      const result = await AuthService.sendOTP(formData.mobileNumber, otp);
-      
-      if (result.success) {
-        setSentOTP(otp);
-        setStep(2);
+      if (process.env.NODE_ENV === 'production') {
+        const result = await FirebaseSMSService.sendSMSVerification(formData.mobileNumber);
+        if (result.success) {
+          setStep(2);
+        } else {
+          setError(result.error || 'Failed to send OTP. Please try again.');
+        }
       } else {
-        setError(result.error || 'Failed to send OTP. Please try again.');
+        // Unless in production, skip Firebase and use mock OTP
+        const otp = AuthService.generateOTP();
+        const result = await AuthService.sendOTP(formData.mobileNumber, otp);
+      
+        if (result.success) {
+          setSentOTP(otp);
+          setStep(2);
+        } else {
+          setError(result.error || 'Failed to send OTP. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -163,9 +172,16 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
     setError('');
 
     try {
+      let otpResult;
+
+      if (process.env.NODE_ENV === 'production') {
+        otpResult = await FirebaseSMSService.verifySMSCode(formData.otp);
+      } else {
+        // Unless in production, verify against mock OTP
+        otpResult = await AuthService.verifyOTP(formData.mobileNumber, formData.otp);
+      }
+
       // Verify OTP first
-      const otpResult = await AuthService.verifyOTP(formData.mobileNumber, formData.otp);
-      
       if (otpResult.success) {
         // Register property
         const registerResult = await AuthService.registerProperty({
