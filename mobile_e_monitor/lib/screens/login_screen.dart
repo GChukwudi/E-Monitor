@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import '../utils/hash_utils.dart';
 import 'home_page.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -62,7 +63,11 @@ class _LoginScreenState extends State<LoginScreen> {
             final unitId = unitEntry.key as String;
             final unitData = unitEntry.value as Map<dynamic, dynamic>;
 
-            if (unitData['accessCode'] == accessCode &&
+            final hashedInput = HashUtils.hashAccessCode(accessCode);
+            final storedHash = unitData['accessCode'] as String?;
+
+            if (storedHash != null &&
+                hashedInput == storedHash &&
                 (unitData['isActive'] ?? true)) {
               if (mounted) {
                 Navigator.pushReplacement(

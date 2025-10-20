@@ -7,7 +7,6 @@ import {
   Copy, 
   Check,
   Power,
-  Shield,
   AlertTriangle,
   Clock
 } from 'lucide-react';
