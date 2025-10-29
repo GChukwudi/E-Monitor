@@ -1,4 +1,4 @@
-import { getDatabase, ref, set, get } from 'firebase/database';
+import { getDatabase, ref, set, get, push, remove,update } from 'firebase/database';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 class NotificationService {
@@ -11,18 +11,19 @@ class NotificationService {
   async sendAlert(managerId, alertType, message, unitId = null) {
     try {
       const alertData = {
-        managerId,
+        // managerId,
         alertType, // 'low_credit', 'high_consumption', 'unit_offline', etc.
         message,
         unitId,
         timestamp: Date.now(),
         read: false,
-        id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        // id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       };
 
       // Save to database
-      const alertRef = ref(this.database, `alerts/${managerId}/${alertData.id}`);
-      await set(alertRef, alertData);
+      const alertRef = ref(this.database, `alerts/${managerId}`);
+      const newAlertRef = push(alertRef);
+      await set(newAlertRef, alertData);
 
       // Send push notification if enabled
       await this.sendPushNotification(managerId, {
@@ -35,7 +36,7 @@ class NotificationService {
         }
       });
 
-      return { success: true, alertId: alertData.id };
+      return { success: true, alertId: newAlertRef.key };
     } catch (error) {
       console.error('Error sending alert:', error);
       return { success: false, error: error.message };
@@ -100,7 +101,7 @@ class NotificationService {
   async markAlertAsRead(managerId, alertId) {
     try {
       const alertRef = ref(this.database, `alerts/${managerId}/${alertId}`);
-      await set(alertRef, { read: true });
+      await update(alertRef, { read: true });
       
       return { success: true };
     } catch (error) {
@@ -109,9 +110,40 @@ class NotificationService {
     }
   }
 
+  async clearNotification(managerId, alertId) {
+    try {
+      const alertRef = ref(this.database, `alerts/${managerId}/${alertId}`);
+      await remove(alertRef);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error clearing notification:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async clearAllNotifications(managerId) {
+    try {
+      const alertsRef = ref(this.database, `alerts/${managerId}`);
+      await remove(alertsRef);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   // Auto-generate alerts based on unit data
   async checkAndGenerateAlerts(managerId, units) {
     const alerts = [];
+
+    const existingAlerts = await this.getAlerts(managerId);
+    const recentAlertKeys = new Set(
+      existingAlerts.alerts
+        .filter(alert => Date.now() - alert.timestamp < 3600000) // last 1 hour
+        .map(a => `${a.alertType}_${a.unitId}`)
+    );
 
     for (const [unitId, unit] of Object.entries(units)) {
       const credit = parseFloat(unit.remainingCredit) || 0;
@@ -119,42 +151,54 @@ class NotificationService {
       
       // Critical low credit alert
       if (credit < 500 && credit > 0) {
-        alerts.push({
-          type: 'critical_low_credit',
-          message: `${unit.name}: Critical low credit - ₦${credit.toFixed(2)} remaining`,
-          unitId
-        });
+        const alertKey = `critical_low_credit_${unitId}`;
+        if (!recentAlertKeys.has(alertKey)) {
+          alerts.push({
+            type: 'critical_low_credit',
+            message: `${unit.name}: Critical low credit - ₦${credit.toFixed(2)} remaining`,
+            unitId
+          });
+        }
       }
       
       // Low credit warning
       else if (credit < 1000 && credit >= 500) {
-        alerts.push({
-          type: 'low_credit',
-          message: `${unit.name}: Low credit warning - ₦${credit.toFixed(2)} remaining`,
-          unitId
-        });
+        const alertKey = `low_credit_${unitId}`;
+        if (!recentAlertKeys.has(alertKey)) {
+          alerts.push({
+            type: 'low_credit',
+            message: `${unit.name}: Low credit warning - ₦${credit.toFixed(2)} remaining`,
+            unitId
+          });
+        }
       }
       
       // High power consumption
       if (power > 1500) {
-        alerts.push({
-          type: 'high_consumption',
-          message: `${unit.name}: High power consumption detected - ${power.toFixed(2)}W`,
-          unitId
-        });
+        const alertKey = `high_consumption_${unitId}`;
+        if (!recentAlertKeys.has(alertKey)) {
+          alerts.push({
+            type: 'high_consumption',
+            message: `${unit.name}: High power consumption detected - ${power.toFixed(2)}W`,
+            unitId
+          });
+        }
       }
       
       // Unit offline (no recent data)
       const lastUpdate = new Date(unit.timestamp);
-      const now = new Date();
+      // const now = new Date();
       const hoursSinceUpdate = (now - lastUpdate) / (1000 * 60 * 60);
       
       if (hoursSinceUpdate > 2) {
-        alerts.push({
-          type: 'unit_offline',
-          message: `${unit.name}: No data received for ${Math.floor(hoursSinceUpdate)} hours`,
-          unitId
-        });
+        const alertKey = `unit_offline_${unitId}`;
+        if (!recentAlertKeys.has(alertKey)) {
+          alerts.push({
+            type: 'unit_offline',
+            message: `${unit.name}: No data received for ${Math.floor(hoursSinceUpdate)} hours`,
+            unitId
+          });
+        }
       }
     }
 
