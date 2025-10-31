@@ -18,7 +18,7 @@ A comprehensive IoT-based energy monitoring solution for transparent electricity
 
 ## 🎯 Overview
 
-This system addresses billing transparency issues in multi-tenant buildings where residents resort to sharing a single prepaid electricity meter due to shortage in distribution from DISCO. It provides:
+This system addresses billing transparency issues in Nigerian multi-tenant buildings where residents resort to sharing a single prepaid electricity meter due to shortage in distribution from DISCO. It provides:
 
 - **Real-time monitoring** of individual unit consumption
 - **Transparent billing** based on actual usage
@@ -26,13 +26,18 @@ This system addresses billing transparency issues in multi-tenant buildings wher
 - **Property manager dashboard** for oversight
 - **Mobile app** for tenants to track their consumption
 
-**Problem Solved:** In Nigeria, many multi-tenant buildings share one prepaid meter, leading to unfair billing and disputes. This system monitors individual unit consumption while working with existing shared meter infrastructure.
+**Solutions** E Monitor provides a complete hardware and software solution:
+- Hardware: ESP32-based monitoring devices with current and voltage sensors per unit
+- Mobile App: Cross-platform Flutter app for tenants to monitor consumption
+- Web Dashboard: React-based management portal for property managers
+- Backend: Firebase Realtime Database for synchronized data and authentication
 
 ## 🔗 Links
 
-- **GitHub Repository:** [https://github.com/GChukwudi/E-Monitor](https://github.com/GChukwudi/E-Monitor)
-- **Live (Web Dashboard):** [https://e-monitor.onrender.com/](https://e-monitor.onrender.com/)
-- **Video Demonstration:** [https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing](https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing)
+- **GitHub Repository:** [Link](https://github.com/GChukwudi/E-Monitor)
+- **Live (Web Dashboard):** [Live](https://e-monitor.onrender.com/)
+- **Video Demonstration:** [Demo Link](https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing)
+- **Latest APK Release** [Download Mobile App]()
 
 ---
 
@@ -44,7 +49,8 @@ This system addresses billing transparency issues in multi-tenant buildings wher
   - ACS712 30A Current Sensor (AC measurement)
   - ZMPT101B Voltage Sensor (AC voltage measurement)
 - **Communication:** WiFi (ESP32 built-in)
-- **Power Supply:** 5V 2A adapter
+- **SD card Module** For local data storage should wifi be out
+- **Power Supply:** AAA 6V Akaline battery
 - **Schematic Design**
 - **PCB Design**
 
@@ -68,27 +74,46 @@ This system addresses billing transparency issues in multi-tenant buildings wher
 ## ✨ Features
 
 ### Property Manager Dashboard
-- ✅ Overview with summary statistics
-- ✅ Real-time unit monitoring
-- ✅ Power consumption charts (Bar & Pie)
-- ✅ Detailed analytics table
-- ✅ Alert system for anomalies
-- ✅ PDF report export
-- ✅ Search and filter functionality
+- ✅ Property manager authentication (access code)
+- ✅ Multi-tenant overview dashboard
+- ✅ Real-time consumption charts
+- ✅ Power distribution visualization
+- ✅ Unit status monitoring
+- ✅ Alert and notification system
+- ✅ Unit management (add/deactivate units)
+- ✅ Secure access code management
+- ✅ PDF report generation
+- ✅ Responsive design
+- ✅ Privacy-focused data presentation
 
 ### Tenant Mobile App
-- ✅ Personal consumption tracking
-- ✅ Remaining credit display
-- ✅ Usage history and trends
-- ✅ Low credit alerts
+- ✅ Cross-platform (Android, iOS, Web)
+- ✅ PIN-based tenant authentication (SHA-256 hashed)
+- ✅ Real-time consumption monitoring
+- ✅ Live power, current, and voltage metrics
+- ✅ Historical data visualization (24h, 7d, 30d)
+- ✅ Credit balance and units remaining
+- ✅ Low credit alerts and notifications
+- ✅ Offline data caching
 
 ### Hardware Device
-- ✅ AC current measurement (30A)
-- ✅ AC voltage measurement (250V - 1000V)
+- ✅ Real-time AC current measurement (ACS712 sensor)
+- ✅ Real-time AC voltage measurement (ZMPT101B sensor)
+- ✅ RMS calculations for accurate AC measurements
 - ✅ Power calculation (P = V × I)
-- ✅ WiFi data transmission
-- ✅ Local data logging (SD card backup)
-- ✅ Status LED indicators
+- ✅ Credit-based relay control (automatic disconnection)
+- ✅ WiFi connectivity with automatic reconnection
+- ✅ Firebase Realtime Database integration
+- ✅ Local data buffering during network outages
+- ✅ Hourly and daily data aggregation
+- ✅ Comprehensive calibration
+
+### Backend
+- ✅ Realtime Database for live data sync
+- ✅ Authentication (custom access codes)
+- ✅ Cloud Functions for business logic
+- ✅ Push notifications (FCM)
+- ✅ Data validation and security rules
 
 ---
 
