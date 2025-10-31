@@ -6,7 +6,7 @@ import '../widgets/metric_card.dart';
 
 class DashboardView extends StatefulWidget {
   final String unitId;
-  final String buildingId; // Added buildingId parameter
+  final String buildingId;
 
   const DashboardView({
     super.key,
@@ -22,7 +22,7 @@ class _DashboardViewState extends State<DashboardView> {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
   PrepaidMeterData? _liveData;
   StreamSubscription? _subscription;
-  String _connectionStatus = 'Connecting...';
+  bool _isConnected = false;
 
   @override
   void initState() {
@@ -39,16 +39,12 @@ class _DashboardViewState extends State<DashboardView> {
 
       if (snapshot.snapshot.value != null) {
         setState(() {
-          _connectionStatus = 'Connected';
-        });
-      } else {
-        setState(() {
-          _connectionStatus = 'No data found';
+          _isConnected = true;
         });
       }
     } catch (e) {
       setState(() {
-        _connectionStatus = 'Connection failed: $e';
+        _isConnected = false;
       });
     }
   }
@@ -78,12 +74,12 @@ class _DashboardViewState extends State<DashboardView> {
 
         setState(() {
           _liveData = PrepaidMeterData.fromMap(data);
-          _connectionStatus = 'Live';
+          _isConnected = true;
         });
       }
     }, onError: (error) {
       setState(() {
-        _connectionStatus = 'Error: $error';
+        _isConnected = false;
       });
     });
   }
@@ -122,7 +118,6 @@ class _DashboardViewState extends State<DashboardView> {
     return '₦${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
   }
 
-  // Rest of your existing build method stays exactly the same
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -130,53 +125,6 @@ class _DashboardViewState extends State<DashboardView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Connection Status Banner
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: _connectionStatus == 'Live'
-                  ? const Color(0xFF84A98C).withOpacity(0.1)
-                  : const Color(0xFFE07A5F).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _connectionStatus == 'Live'
-                    ? const Color(0xFF84A98C).withOpacity(0.3)
-                    : const Color(0xFFE07A5F).withOpacity(0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: _connectionStatus == 'Live'
-                        ? const Color(0xFF84A98C)
-                        : const Color(0xFFE07A5F),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    _connectionStatus == 'Live' ? Icons.check : Icons.sync,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Firebase: $_connectionStatus',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _connectionStatus == 'Live'
-                        ? const Color(0xFF84A98C)
-                        : const Color(0xFFE07A5F),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
           if (_liveData == null)
             const Center(
               child: Column(
@@ -187,7 +135,7 @@ class _DashboardViewState extends State<DashboardView> {
                   ),
                   SizedBox(height: 20),
                   Text(
-                    'Waiting for data from Firebase...',
+                    'Loading data...',
                     style: TextStyle(
                       fontSize: 15,
                       color: Color(0xFF3D405B),
@@ -196,7 +144,7 @@ class _DashboardViewState extends State<DashboardView> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Make sure ESP32 is running and sending data',
+                    'Please wait while we fetch your meter information',
                     style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                   ),
                 ],
@@ -710,7 +658,6 @@ class _DashboardViewState extends State<DashboardView> {
     final newCredit = (_liveData?.remainingCredit ?? 0) + amount;
     final newUnits = (_liveData?.remainingUnits ?? 0) + units;
 
-    // Updated to use dynamic building ID
     _database
         .child('buildings/${widget.buildingId}/units/${widget.unitId}')
         .update({
