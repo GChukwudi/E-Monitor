@@ -288,18 +288,6 @@ class _DashboardViewState extends State<DashboardView> {
               childAspectRatio: 1.5,
               children: [
                 MetricCard(
-                  title: 'Current',
-                  value: '${_liveData!.current.toStringAsFixed(2)}A',
-                  icon: Icons.bolt_outlined,
-                  color: const Color(0xFF3B82F6),
-                ),
-                MetricCard(
-                  title: 'Voltage',
-                  value: '${_liveData!.voltage.toStringAsFixed(1)}V',
-                  icon: Icons.flash_on_outlined,
-                  color: const Color(0xFFF59E0B),
-                ),
-                MetricCard(
                   title: 'Power',
                   value: '${_liveData!.power.toStringAsFixed(1)}W',
                   icon: Icons.power_outlined,

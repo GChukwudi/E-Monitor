@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="mobile_e_monitor"
+        android:label="E Monitor"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
