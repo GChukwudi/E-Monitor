@@ -37,8 +37,8 @@ This system addresses billing transparency issues in Nigerian multi-tenant build
 
 - **GitHub Repository:** [Link](https://github.com/GChukwudi/E-Monitor)
 - **Live (Web Dashboard):** [Live](https://e-monitor.onrender.com/)
-- **Video Demonstration:** [Demo Link](https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing)
-- **Latest APK Release** [Download Mobile App]()
+- **Video Demonstration:** [Demo Link](https://drive.google.com/drive/folders/1gjXzexPW5yc2n79OLhiG4Qtqr-HOdAr_?usp=sharing)
+- **Latest APK Release** [Download Mobile App](https://drive.google.com/drive/folders/1_bxIKbI1Zjs-0DaGgaO8_DwQCkAIdo22?usp=sharing)
 
 ---
 
@@ -554,7 +554,7 @@ flutter run
 
 **Duration:** 7.40 minutes
 
-**Video Link:** [https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing](https://drive.google.com/file/d/19b-Hg6-0-jayqOoqiSSrxl9EkX0PcjLt/view?usp=sharing)
+**Video Link:** [Video](https://drive.google.com/drive/folders/1gjXzexPW5yc2n79OLhiG4Qtqr-HOdAr_?usp=sharing)
 
 ### Video Contents:
 - ✅ System overview (30 seconds)
