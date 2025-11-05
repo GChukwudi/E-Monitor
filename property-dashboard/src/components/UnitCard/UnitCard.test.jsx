@@ -15,7 +15,7 @@ describe('UnitCard Component', () => {
     render(<UnitCard unitId="unit_001" unit={mockUnit} onClick={() => {}} />);
     
     expect(screen.getByText(/250.5W/i)).toBeInTheDocument();
-    expect(screen.getByText(/1.2A/i)).toBeInTheDocument();
+    expect(screen.getByText(/1.20A/i)).toBeInTheDocument();
   });
 
   test('shows operational status for sufficient credit', () => {

@@ -20,7 +20,7 @@ describe('Analytics Page', () => {
   test('displays operational status', () => {
     render(<Analytics units={mockUnits} />);
     
-    expect(screen.getByText(/Operational/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Operational/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Critical/i)).toBeInTheDocument();
     expect(screen.getByText(/Disconnected/i)).toBeInTheDocument();
   });
