@@ -13,14 +13,12 @@
 
 
 // WiFi credentials
-const char* ssid = "ALHN-7B57";
-const char* password = "q9B$wH5*pZ@2!x99Y";
-// const char* ssid = "ALU_Staff";
-// const char* password = "@fr1canLU_staff";
+const char* ssid = "<SSID>";
+const char* password = "<PASSWORD>";
 
 // Firebase credentials
-#define WEB_API_KEY "AIzaSyAFxZ40Oj7xe1fByBdlSCCBUTUhMPLGtBk"
-#define DATABASE_URL "https://electricity-monitor-9140f-default-rtdb.europe-west1.firebasedatabase.app/"
+#define WEB_API_KEY "<WEB_API_KEY>"
+#define DATABASE_URL "https://your-database-name.firebaseio.com/"
 
 // Pin definitions
 #define CURRENT_PIN 35
