@@ -11,13 +11,16 @@
 #include <esp_task_wdt.h>
 #include <FirebaseJson.h>
 
-// WiFi credentials - CHANGE THESE
-const char* ssid = "";
-const char* password = "";
 
-// Firebase credentials - GET FROM FIREBASE CONSOLE
-#define WEB_API_KEY ""
-#define DATABASE_URL ""
+// WiFi credentials
+const char* ssid = "ALHN-7B57";
+const char* password = "q9B$wH5*pZ@2!x99Y";
+// const char* ssid = "ALU_Staff";
+// const char* password = "@fr1canLU_staff";
+
+// Firebase credentials
+#define WEB_API_KEY "AIzaSyAFxZ40Oj7xe1fByBdlSCCBUTUhMPLGtBk"
+#define DATABASE_URL "https://electricity-monitor-9140f-default-rtdb.europe-west1.firebasedatabase.app/"
 
 // Pin definitions
 #define CURRENT_PIN 35
@@ -140,7 +143,7 @@ void setup() {
     pinMode(STATUS_LED, OUTPUT);
     pinMode(RELAY_PIN, OUTPUT);
     digitalWrite(STATUS_LED, LOW);
-    digitalWrite(RELAY_PIN, HIGH);
+    digitalWrite(RELAY_PIN, LOW);
 
     Serial.printf("Initial RELAY_PIN output (wrote HIGH). digitalRead: %d\n", digitalRead(RELAY_PIN));
     
@@ -303,7 +306,7 @@ void creditCallback(AsyncResult &aResult) {
 
             if (shouldBeOn) {
                 // Ensure hardware matches desired state
-                digitalWrite(RELAY_PIN, HIGH);
+                digitalWrite(RELAY_PIN, LOW);
                 if (!relayState) {
                     relayState = true;
                     Serial.println("✓ RELAY ON - Power flowing to unit");
@@ -315,7 +318,7 @@ void creditCallback(AsyncResult &aResult) {
                     }
                 }
             } else {
-                digitalWrite(RELAY_PIN, LOW);
+                digitalWrite(RELAY_PIN, HIGH);
                 if (relayState) {
                     relayState = false;
                     Serial.println("✗ RELAY OFF - No credit! Power disconnected");
