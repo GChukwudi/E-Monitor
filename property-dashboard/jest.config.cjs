@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
   moduleNameMapper: {
@@ -6,8 +6,11 @@ export default {
     '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/__mocks__/fileMock.js'
   },
   transform: {
-    '^.+\\.(js|jsx)$': 'babel-jest',
+    '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './babel.config.cjs' }],
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(lucide-react)/)'
+  ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx}',
     '!src/main.jsx',
