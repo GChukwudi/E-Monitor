@@ -163,11 +163,16 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TimeRangeButton(
-              label: '24 Hours',
-              value: '24h',
-              selected: false,
-              onTap: () {},
+            body: Row(
+              // TimeRangeButton needs Row parent
+              children: [
+                TimeRangeButton(
+                  label: '24 Hours',
+                  value: '24h',
+                  selected: false,
+                  onTap: () {},
+                ),
+              ],
             ),
           ),
         ),
@@ -182,11 +187,16 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TimeRangeButton(
-              label: '7 Days',
-              value: '7d',
-              selected: true,
-              onTap: () {},
+            body: Row(
+              // TimeRangeButton needs Row parent
+              children: [
+                TimeRangeButton(
+                  label: '7 Days',
+                  value: '7d',
+                  selected: true,
+                  onTap: () {},
+                ),
+              ],
             ),
           ),
         ),
@@ -211,11 +221,16 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TimeRangeButton(
-              label: '30 Days',
-              value: '30d',
-              selected: false,
-              onTap: () {},
+            body: Row(
+              // TimeRangeButton needs Row parent
+              children: [
+                TimeRangeButton(
+                  label: '30 Days',
+                  value: '30d',
+                  selected: false,
+                  onTap: () {},
+                ),
+              ],
             ),
           ),
         ),
@@ -242,13 +257,18 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TimeRangeButton(
-              label: '24 Hours',
-              value: '24h',
-              selected: false,
-              onTap: () {
-                tapped = true;
-              },
+            body: Row(
+              // TimeRangeButton needs Row parent
+              children: [
+                TimeRangeButton(
+                  label: '24 Hours',
+                  value: '24h',
+                  selected: false,
+                  onTap: () {
+                    tapped = true;
+                  },
+                ),
+              ],
             ),
           ),
         ),
@@ -267,11 +287,16 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TimeRangeButton(
-              label: 'Selected',
-              value: 'sel',
-              selected: true,
-              onTap: () {},
+            body: Row(
+              // TimeRangeButton needs Row parent
+              children: [
+                TimeRangeButton(
+                  label: 'Selected',
+                  value: 'sel',
+                  selected: true,
+                  onTap: () {},
+                ),
+              ],
             ),
           ),
         ),
@@ -287,11 +312,16 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TimeRangeButton(
-              label: 'Unselected',
-              value: 'unsel',
-              selected: false,
-              onTap: () {},
+            body: Row(
+              // TimeRangeButton needs Row parent
+              children: [
+                TimeRangeButton(
+                  label: 'Unselected',
+                  value: 'unsel',
+                  selected: false,
+                  onTap: () {},
+                ),
+              ],
             ),
           ),
         ),

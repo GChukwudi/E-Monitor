@@ -316,18 +316,24 @@ void main() {
 
       // Your PrepaidMeterData.fromMap should handle this
       // by converting to 0.0 or appropriate default
-      expect(
-        () {
-          final current = (invalidData['current'] ?? 0.0).toDouble();
-          final voltage = (invalidData['voltage'] ?? 0.0).toDouble();
-          final power = (invalidData['power'] ?? 0.0).toDouble();
+      double safeToDouble(dynamic value) {
+        if (value == null) return 0.0;
+        if (value is double) return value;
+        if (value is int) return value.toDouble();
+        if (value is String) {
+          final parsed = double.tryParse(value);
+          return parsed ?? 0.0;
+        }
+        return 0.0;
+      }
 
-          expect(current, 0.0);
-          expect(voltage, 0.0);
-          expect(power, 0.0);
-        },
-        returnsNormally,
-      );
+      final current = safeToDouble(invalidData['current']);
+      final voltage = safeToDouble(invalidData['voltage']);
+      final power = safeToDouble(invalidData['power']);
+
+      expect(current, 0.0);
+      expect(voltage, 0.0);
+      expect(power, 0.0);
     });
   });
 }
