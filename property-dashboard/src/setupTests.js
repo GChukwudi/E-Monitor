@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 
-// Mock TextEncoder/TextDecoder
+// Mock TextEncoder/TextDecoder (required for some libraries)
 global.TextEncoder = require('util').TextEncoder;
 global.TextDecoder = require('util').TextDecoder;
 
@@ -28,28 +28,3 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: jest.fn(),
   })),
 });
-
-// Mock html2pdf
-jest.mock('html2pdf.js', () => {
-  return jest.fn(() => ({
-    set: jest.fn().mockReturnThis(),
-    from: jest.fn().mockReturnThis(),
-    save: jest.fn().mockReturnThis(),
-    output: jest.fn().mockResolvedValue('mock-pdf-blob'),
-  }));
-});
-
-// Mock recharts
-jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }) => children,
-  BarChart: ({ children }) => children,
-  PieChart: ({ children }) => children,
-  Bar: () => null,
-  Pie: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
-  CartesianGrid: () => null,
-  Tooltip: () => null,
-  Legend: () => null,
-  Cell: () => null,
-}));

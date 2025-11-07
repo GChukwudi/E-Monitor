@@ -4,13 +4,12 @@ module.exports = {
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/__mocks__/fileMock.js',
-    '^html2pdf.js$': '<rootDir>/__mocks__/html2pdf.js'
   },
   transform: {
     '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './babel.config.cjs' }],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(lucide-react|recharts)/)'
+    'node_modules/(?!(lucide-react)/)'
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx}',
