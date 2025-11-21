@@ -426,217 +426,219 @@ class _DashboardViewState extends State<DashboardView> {
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with icon
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF84A98C).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xFF84A98C),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Text(
-                      'Recharge Meter',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 20,
-                        color: Color(0xFF3D405B),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Description
-              const Text(
-                'Enter recharge amount in Naira',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 14,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Amount input field
-              TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF3D405B),
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Amount',
-                  labelStyle: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 14,
-                  ),
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(left: 16, top: 14),
-                    child: Text(
-                      '₦',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF84A98C),
-                      ),
-                    ),
-                  ),
-                  prefixIconConstraints: const BoxConstraints(minWidth: 0),
-                  filled: true,
-                  fillColor: const Color(0xFFF5F5F4),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFE5E7EB),
-                      width: 1,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF84A98C),
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Rate info box
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF84A98C).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFF84A98C).withOpacity(0.2),
-                  ),
-                ),
-                child: const Row(
+        child: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with icon
+                Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 18,
-                      color: Color(0xFF84A98C),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF84A98C).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        color: Color(0xFF84A98C),
+                        size: 24,
+                      ),
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Rate: ₦209.5 per kWh',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF3D405B),
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Based on Band A tariff',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                        ],
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'Recharge Meter',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          color: Color(0xFF3D405B),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancel',
+                // Description
+                const Text(
+                  'Enter recharge amount in Naira',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 14,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Amount input field
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF3D405B),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Amount',
+                    labelStyle: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 14,
+                    ),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(left: 16, top: 14),
+                      child: Text(
+                        '₦',
                         style: TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 15,
+                          fontSize: 18,
                           fontWeight: FontWeight.w600,
+                          color: Color(0xFF84A98C),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final amount =
-                            double.tryParse(amountController.text) ?? 0;
-                        if (amount > 0) {
-                          _processRecharge(amount);
-                          Navigator.pop(context);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF84A98C),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 0),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F5F4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE5E7EB),
+                        width: 1,
                       ),
-                      child: const Text(
-                        'Recharge Now',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF84A98C),
+                        width: 2,
                       ),
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Rate info box
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF84A98C).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF84A98C).withOpacity(0.2),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: Color(0xFF84A98C),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Rate: ₦209.5 per kWh',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF3D405B),
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Based on Band A tariff',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final amount =
+                              double.tryParse(amountController.text) ?? 0;
+                          if (amount > 0) {
+                            _processRecharge(amount);
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF84A98C),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Recharge Now',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

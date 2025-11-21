@@ -276,7 +276,11 @@ class _HomePageState extends State<HomePage> {
                   buildingId:
                       widget.buildingId ?? 'building_001', // Default fallback
                 ),
-                HistoryView(unitId: _selectedUnit),
+                HistoryView(
+                  unitId: _selectedUnit,
+                  buildingId:
+                      widget.buildingId ?? 'building_001', // Default fallback
+                ),
               ],
             ),
           ),
